@@ -343,14 +343,16 @@ class Store {
 
         // 3. Synchronize Remote Registrations
         if (Array.isArray(data.registrations)) {
-          let remoteRegs = data.registrations.map(r => ({
-            ...r,
-            studentId: r.studentId || r.workerId,
-            workerNickname: r.workerNickname || r.nickname || '-',
-            workerYear: r.workerYear || r.year || 'ชั้นปีที่ 1',
-            workerDept: r.workerDept || r.department || r.dept || '-',
-            hoursGranted: parseFloat(r.hoursGranted) || 0
-          }));
+          let remoteRegs = data.registrations
+            .filter(r => r && r.status !== 'cancelled')
+            .map(r => ({
+              ...r,
+              studentId: r.studentId || r.workerId,
+              workerNickname: r.workerNickname || r.nickname || '-',
+              workerYear: r.workerYear || r.year || 'ชั้นปีที่ 1',
+              workerDept: r.workerDept || r.department || r.dept || '-',
+              hoursGranted: parseFloat(r.hoursGranted) || 0
+            }));
           localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(remoteRegs));
           if (remoteRegs.length > 0) hasRemoteData = true;
         }
@@ -916,7 +918,7 @@ class Store {
     const index = regs.findIndex(r => r.workerId === workerId && r.activityId === activityId && r.status !== 'cancelled');
 
     if (index !== -1) {
-      regs[index].status = 'cancelled';
+      regs.splice(index, 1);
       localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(regs));
 
       // Re-open activity if it was full
