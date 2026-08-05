@@ -115,15 +115,6 @@ class Store {
   }
 
   init() {
-    // Flush old demo seed data if present
-    const existingWorkers = JSON.parse(localStorage.getItem(STORAGE_KEYS.WORKERS) || '[]');
-    if (existingWorkers.some(w => w.id === 'STF-1001')) {
-      localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify([]));
-      localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify([]));
-      localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify([]));
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, '');
-    }
-
     const currentWorkers = JSON.parse(localStorage.getItem(STORAGE_KEYS.WORKERS) || '[]');
     if (!localStorage.getItem(STORAGE_KEYS.WORKERS) || currentWorkers.length === 0) {
       localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(DEFAULT_WORKERS));

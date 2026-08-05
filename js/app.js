@@ -247,8 +247,13 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCurrentView();
     setupRealtimeListeners();
 
-    // Trigger immediate fetch from Google Sheets on page load
+    // Fetch latest cloud data immediately on page open and force instant re-render
+    _hasInitialFetched = false;
     await triggerSharedDataSync();
+    _hasInitialFetched = true;
+    populateCategoryDropdowns();
+    refreshHeaderProfile();
+    renderCurrentView();
     startAutoPolling();
   }
 
