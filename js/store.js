@@ -255,6 +255,7 @@ class Store {
 
     window._isSyncingToSheets = true;
     window._lastSyncTimestamp = Date.now();
+    this._lastLocalMutationTimestamp = Date.now();
 
     const payload = {
       action: 'syncAll',
@@ -276,7 +277,7 @@ class Store {
       });
       setTimeout(() => {
         window._isSyncingToSheets = false;
-      }, 3500);
+      }, 4000);
       return { success: true, message: 'ซิงค์ข้อมูลกับ Google Sheets เรียบร้อยแล้ว' };
     } catch (err) {
       window._isSyncingToSheets = false;
@@ -286,6 +287,9 @@ class Store {
   }
 
   autoSyncToSheets() {
+    window._isSyncingToSheets = true;
+    window._lastSyncTimestamp = Date.now();
+    this._lastLocalMutationTimestamp = Date.now();
     this.notifyDataChanged();
     const url = this.getGoogleSheetUrl();
     if (!url) return;
@@ -298,8 +302,11 @@ class Store {
     const url = this.getGoogleSheetUrl();
     if (!url) return { success: false, message: 'ยังไม่ได้ระบุ Google Sheets Web App URL' };
 
-    // Skip fetch if currently pushing to avoid race condition
-    if (window._isSyncingToSheets || (Date.now() - (window._lastSyncTimestamp || 0) < 800)) {
+    const timeSinceMutation = Date.now() - (this._lastLocalMutationTimestamp || 0);
+    const timeSinceSync = Date.now() - (window._lastSyncTimestamp || 0);
+
+    // Skip fetch if currently pushing or recently mutated to avoid race condition with stale Google Sheet data
+    if (window._isSyncingToSheets || timeSinceSync < 4000 || timeSinceMutation < 4000) {
       return { success: true, skipped: true };
     }
 
@@ -341,7 +348,7 @@ class Store {
           }
         }
 
-        // 3. Synchronize Remote Registrations
+        // 3. Synchronize Remote Registrations (with Smart Merge to preserve recent local mutations)
         if (Array.isArray(data.registrations)) {
           let remoteRegs = data.registrations
             .filter(r => r && r.status !== 'cancelled')
@@ -353,8 +360,20 @@ class Store {
               workerDept: r.workerDept || r.department || r.dept || '-',
               hoursGranted: parseFloat(r.hoursGranted) || 0
             }));
-          localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(remoteRegs));
-          if (remoteRegs.length > 0) hasRemoteData = true;
+
+          // Smart Merge: Preserve recent local registrations not yet reflected in Google Sheets
+          const localRegs = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGISTRATIONS)) || [];
+          const remoteKeys = new Set(remoteRegs.map(r => `${String(r.workerId || '').trim()}_${String(r.activityId || '').trim()}`));
+          
+          const pendingLocal = localRegs.filter(l => {
+            if (!l || l.status === 'cancelled') return false;
+            const key = `${String(l.workerId || '').trim()}_${String(l.activityId || '').trim()}`;
+            return !remoteKeys.has(key);
+          });
+
+          const finalRegs = [...remoteRegs, ...pendingLocal];
+          localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(finalRegs));
+          if (finalRegs.length > 0) hasRemoteData = true;
         }
 
         // 4. Synchronize Remote Categories
