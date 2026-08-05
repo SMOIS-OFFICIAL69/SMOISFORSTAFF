@@ -76,19 +76,52 @@ document.addEventListener('DOMContentLoaded', () => {
   // --------------------------------------------------------------------------
   // 1. App Initialization & Profile Sync
   // --------------------------------------------------------------------------
-  // --------------------------------------------------------------------------
-  // 1. App Initialization & Profile Sync
-  // --------------------------------------------------------------------------
   let autoFetchTimer = null;
+  let _hasInitialFetched = false;
+
+  function updateLiveSyncBadge(status = 'synced') {
+    const badges = document.querySelectorAll('.live-sync-badge');
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+    badges.forEach(badge => {
+      if (status === 'syncing') {
+        badge.innerHTML = `<span class="live-sync-dot" style="background:#eab308; animation:none;"></span> ⚡ กำลังซิงค์...`;
+      } else {
+        badge.innerHTML = `<span class="live-sync-dot"></span> เรียลไทม์ (${timeStr})`;
+      }
+    });
+  }
+
+  function refreshActiveModalsIfOpen() {
+    try {
+      const rosterModal = document.getElementById('activity-roster-modal');
+      if (rosterModal && rosterModal.classList.contains('open') && window._activeRosterActivityId) {
+        showActivityRosterModal(window._activeRosterActivityId);
+      }
+      const detailsModal = document.getElementById('activity-details-modal');
+      if (detailsModal && detailsModal.classList.contains('open') && window._activeDetailsActivityId) {
+        showActivityDetailsModal(window._activeDetailsActivityId);
+      }
+    } catch (err) {
+      console.warn('Refresh open modals warning:', err);
+    }
+  }
 
   async function triggerSharedDataSync() {
     if (store.getGoogleSheetUrl()) {
       try {
         const res = await store.fetchFromGoogleSheets();
         if (res && res.success && !res.skipped) {
-          populateCategoryDropdowns();
-          refreshHeaderProfile();
-          renderCurrentView();
+          updateLiveSyncBadge('synced');
+          if (res.updated && _hasInitialFetched) {
+            populateCategoryDropdowns();
+            refreshHeaderProfile();
+            renderCurrentView();
+            refreshActiveModalsIfOpen();
+            ui.showToast('🔄 มีการอัปเดตข้อมูลใหม่จากผู้ใช้งานอื่นแล้ว (Real-time Sync)', 'info');
+          }
+          _hasInitialFetched = true;
         }
       } catch (e) {
         console.warn('Auto fetch on interval warning:', e);
@@ -99,16 +132,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function startAutoPolling() {
     if (autoFetchTimer) clearInterval(autoFetchTimer);
     triggerSharedDataSync();
-    // Continuous heartbeat poll every 2.5 seconds for instant real-time sync across all devices
-    autoFetchTimer = setInterval(triggerSharedDataSync, 2500);
+    // Continuous heartbeat poll every 2.0 seconds for instant real-time sync across all devices
+    autoFetchTimer = setInterval(triggerSharedDataSync, 2000);
   }
 
   function setupRealtimeListeners() {
     // 1. Custom internal event for same-page state mutations
-    window.addEventListener('smo-data-updated', () => {
+    window.addEventListener('smo-data-updated', (e) => {
       populateCategoryDropdowns();
       refreshHeaderProfile();
       renderCurrentView();
+      refreshActiveModalsIfOpen();
+      updateLiveSyncBadge('synced');
     });
 
     // 2. BroadcastChannel for instant cross-tab sync in the same browser
@@ -120,6 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
             populateCategoryDropdowns();
             refreshHeaderProfile();
             renderCurrentView();
+            refreshActiveModalsIfOpen();
+            updateLiveSyncBadge('synced');
           }
         };
       } catch (e) {
@@ -133,6 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
         populateCategoryDropdowns();
         refreshHeaderProfile();
         renderCurrentView();
+        refreshActiveModalsIfOpen();
+        updateLiveSyncBadge('synced');
       }
     });
 
@@ -920,6 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Modal 1: Details Modal
   function showActivityDetailsModal(actId) {
+    window._activeDetailsActivityId = actId;
     const act = store.getActivityById(actId);
     if (!act) return;
 
@@ -1196,6 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Modal 4: Manage Activity Roster & Attendance Approval
   function showActivityRosterModal(actId) {
+    window._activeRosterActivityId = actId;
     const act = store.getActivityById(actId);
     if (!act) return;
 

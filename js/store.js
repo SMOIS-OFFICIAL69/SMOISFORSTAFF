@@ -156,18 +156,37 @@ class Store {
   }
 
   // --- Real-time Notification Engine ---
-  notifyDataChanged() {
+  notifyDataChanged(details = {}) {
     try {
       if ('BroadcastChannel' in window) {
         if (!this._syncChannel) {
           this._syncChannel = new BroadcastChannel('smo_staff_sync_channel');
         }
-        this._syncChannel.postMessage({ type: 'DATA_UPDATED', timestamp: Date.now() });
+        this._syncChannel.postMessage({ type: 'DATA_UPDATED', timestamp: Date.now(), ...details });
       }
     } catch (e) {
       // Ignore broadcast errors in unsupported environments
     }
-    window.dispatchEvent(new CustomEvent('smo-data-updated'));
+    window.dispatchEvent(new CustomEvent('smo-data-updated', { detail: details }));
+  }
+
+  getDataFingerprint() {
+    try {
+      const w = localStorage.getItem(STORAGE_KEYS.WORKERS) || '';
+      const a = localStorage.getItem(STORAGE_KEYS.ACTIVITIES) || '';
+      const r = localStorage.getItem(STORAGE_KEYS.REGISTRATIONS) || '';
+      const c = localStorage.getItem(STORAGE_KEYS.CATEGORIES) || '';
+      const adm = localStorage.getItem(STORAGE_KEYS.ADMINS) || '';
+      const str = `${w}|${a}|${r}|${c}|${adm}`;
+
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash * 31 + str.charCodeAt(i)) & 0xFFFFFFFF;
+      }
+      return `${str.length}_${hash.toString(36)}`;
+    } catch (e) {
+      return '';
+    }
   }
 
   // --- Google Sheets Integration Engine ---
@@ -247,6 +266,7 @@ class Store {
 
       if (data && typeof data === 'object') {
         let hasRemoteData = false;
+        const prevFingerprint = this.getDataFingerprint();
 
         // 1. Synchronize Remote Workers
         if (Array.isArray(data.workers)) {
@@ -306,14 +326,17 @@ class Store {
         // Sanitize and fix any duplicate activity IDs from cloud/local data
         this.sanitizeAndFixDuplicateActivityIds();
 
+        const newFingerprint = this.getDataFingerprint();
+        const dataChanged = prevFingerprint !== newFingerprint;
+
         // If remote Google Sheet was completely empty, seed it with default local data
         if (!hasRemoteData && (!data.workers || data.workers.length === 0) && (!data.activities || data.activities.length === 0)) {
           this.autoSyncToSheets();
         } else {
-          this.notifyDataChanged();
+          this.notifyDataChanged({ source: 'cloud', updated: dataChanged });
         }
 
-        return { success: true };
+        return { success: true, updated: dataChanged };
       }
       return { success: false, message: 'รูปแบบข้อมูลจาก Google Sheets ไม่ถูกต้อง' };
     } catch (err) {
@@ -331,6 +354,7 @@ class Store {
     localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(DEFAULT_ADMINS));
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, 'STF-1001');
     localStorage.setItem(STORAGE_KEYS.CURRENT_ROLE, 'worker');
+    this.autoSyncToSheets();
   }
 
   // --- Dynamic Admin Accounts ---
@@ -357,6 +381,7 @@ class Store {
     };
     admins.push(newAdmin);
     localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(admins));
+    this.autoSyncToSheets();
     return newAdmin;
   }
 
@@ -372,6 +397,7 @@ class Store {
         password: updatedData.password && updatedData.password.trim() ? updatedData.password.trim() : admins[index].password
       };
       localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(admins));
+      this.autoSyncToSheets();
       return admins[index];
     }
     throw new Error('ไม่พบบัญชีแอดมินที่ต้องการแก้ไข');
@@ -384,6 +410,7 @@ class Store {
     }
     admins = admins.filter(a => a.username.toLowerCase() !== username.toLowerCase());
     localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(admins));
+    this.autoSyncToSheets();
     return true;
   }
 
@@ -404,6 +431,7 @@ class Store {
     if (!categories.includes(cleanName)) {
       categories.push(cleanName);
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+      this.autoSyncToSheets();
     }
     return cleanName;
   }
