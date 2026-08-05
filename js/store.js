@@ -153,19 +153,73 @@ class Store {
       localStorage.setItem(STORAGE_KEYS.GOOGLE_SHEET_URL, DEFAULT_GOOGLE_SHEET_URL);
     }
     this.sanitizeAndFixDuplicateActivityIds();
+    this.initRealtimeWebSocket();
+  }
+
+  initRealtimeWebSocket() {
+    try {
+      if (this._realtimeSocket) return;
+      const socketUrl = 'wss://free.websocket.in/v3/smo-staff-sync-global?api_key=public';
+      const ws = new WebSocket(socketUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data && data.type === 'DATA_UPDATED') {
+            window.dispatchEvent(new CustomEvent('smo-realtime-signal', { detail: data }));
+          }
+        } catch (e) {}
+      };
+
+      ws.onclose = () => {
+        this._realtimeSocket = null;
+        setTimeout(() => this.initRealtimeWebSocket(), 3000);
+      };
+
+      ws.onerror = () => {
+        try { ws.close(); } catch (e) {}
+      };
+
+      this._realtimeSocket = ws;
+    } catch (e) {
+      // Fallback silently if WebSockets are blocked
+    }
   }
 
   // --- Real-time Notification Engine ---
   notifyDataChanged(details = {}) {
     try {
+      const payload = {
+        type: 'DATA_UPDATED',
+        timestamp: Date.now(),
+        source: details.source || 'local',
+        ...details
+      };
+
+      if (payload.source !== 'cloud') {
+        payload.snapshot = {
+          workers: this.getWorkers(),
+          activities: this.getActivities(),
+          registrations: this.getRegistrations(),
+          categories: this.getCategories(),
+          admins: this.getAdmins()
+        };
+      }
+
       if ('BroadcastChannel' in window) {
         if (!this._syncChannel) {
           this._syncChannel = new BroadcastChannel('smo_staff_sync_channel');
         }
-        this._syncChannel.postMessage({ type: 'DATA_UPDATED', timestamp: Date.now(), ...details });
+        this._syncChannel.postMessage(payload);
+      }
+
+      if (this._realtimeSocket && this._realtimeSocket.readyState === WebSocket.OPEN) {
+        try {
+          this._realtimeSocket.send(JSON.stringify(payload));
+        } catch (e) {}
       }
     } catch (e) {
-      // Ignore broadcast errors in unsupported environments
+      // Ignore broadcast errors
     }
     window.dispatchEvent(new CustomEvent('smo-data-updated', { detail: details }));
   }
@@ -254,7 +308,7 @@ class Store {
     if (!url) return { success: false, message: 'ยังไม่ได้ระบุ Google Sheets Web App URL' };
 
     // Skip fetch if currently pushing to avoid race condition
-    if (window._isSyncingToSheets || (Date.now() - (window._lastSyncTimestamp || 0) < 2000)) {
+    if (window._isSyncingToSheets || (Date.now() - (window._lastSyncTimestamp || 0) < 800)) {
       return { success: true, skipped: true };
     }
 

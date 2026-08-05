@@ -129,11 +129,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function handleIncomingRealtimeSignal(data) {
+    if (!data || data.type !== 'DATA_UPDATED') return;
+
+    if (data.snapshot && data.source !== 'cloud') {
+      try {
+        const prevFingerprint = store.getDataFingerprint();
+        const STORAGE_KEYS = {
+          WORKERS: 'smo_staff_workers',
+          ACTIVITIES: 'smo_staff_activities',
+          REGISTRATIONS: 'smo_staff_registrations',
+          CATEGORIES: 'smo_staff_categories',
+          ADMINS: 'smo_staff_admins'
+        };
+
+        if (Array.isArray(data.snapshot.workers)) {
+          localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(data.snapshot.workers));
+        }
+        if (Array.isArray(data.snapshot.activities)) {
+          localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(data.snapshot.activities));
+        }
+        if (Array.isArray(data.snapshot.registrations)) {
+          localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(data.snapshot.registrations));
+        }
+        if (Array.isArray(data.snapshot.categories)) {
+          localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(data.snapshot.categories));
+        }
+        if (Array.isArray(data.snapshot.admins)) {
+          localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(data.snapshot.admins));
+        }
+
+        const newFingerprint = store.getDataFingerprint();
+        if (prevFingerprint !== newFingerprint) {
+          populateCategoryDropdowns();
+          refreshHeaderProfile();
+          renderCurrentView();
+          refreshActiveModalsIfOpen();
+          updateLiveSyncBadge('synced');
+          ui.showToast('⚡ อัปเดตข้อมูลเรียลไทม์ทันที (Instant Real-time Sync)', 'info');
+        }
+      } catch (err) {
+        console.warn('Apply realtime snapshot warning:', err);
+      }
+    } else {
+      triggerSharedDataSync();
+    }
+  }
+
   function startAutoPolling() {
     if (autoFetchTimer) clearInterval(autoFetchTimer);
     triggerSharedDataSync();
-    // Continuous heartbeat poll every 2.0 seconds for instant real-time sync across all devices
-    autoFetchTimer = setInterval(triggerSharedDataSync, 2000);
+    // High-speed heartbeat poll every 1.0 second for instant real-time sync across all devices
+    autoFetchTimer = setInterval(triggerSharedDataSync, 1000);
   }
 
   function setupRealtimeListeners() {
@@ -146,25 +193,24 @@ document.addEventListener('DOMContentLoaded', () => {
       updateLiveSyncBadge('synced');
     });
 
-    // 2. BroadcastChannel for instant cross-tab sync in the same browser
+    // 2. Realtime WebSocket signal event for cross-device instant sync
+    window.addEventListener('smo-realtime-signal', (e) => {
+      handleIncomingRealtimeSignal(e.detail);
+    });
+
+    // 3. BroadcastChannel for instant cross-tab sync in the same browser
     if ('BroadcastChannel' in window) {
       try {
         const channel = new BroadcastChannel('smo_staff_sync_channel');
         channel.onmessage = (event) => {
-          if (event.data && event.data.type === 'DATA_UPDATED') {
-            populateCategoryDropdowns();
-            refreshHeaderProfile();
-            renderCurrentView();
-            refreshActiveModalsIfOpen();
-            updateLiveSyncBadge('synced');
-          }
+          handleIncomingRealtimeSignal(event.data);
         };
       } catch (e) {
         console.warn('BroadcastChannel error:', e);
       }
     }
 
-    // 3. Storage event fallback for older browsers
+    // 4. Storage event fallback for older browsers
     window.addEventListener('storage', (e) => {
       if (e.key && e.key.startsWith('smo_staff_')) {
         populateCategoryDropdowns();
