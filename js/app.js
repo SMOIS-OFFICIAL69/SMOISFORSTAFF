@@ -119,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshHeaderProfile();
             renderCurrentView();
             refreshActiveModalsIfOpen();
-            ui.showToast('🔄 มีการอัปเดตข้อมูลใหม่จากผู้ใช้งานอื่นแล้ว (Real-time Sync)', 'info');
           }
           _hasInitialFetched = true;
         }
@@ -166,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
           renderCurrentView();
           refreshActiveModalsIfOpen();
           updateLiveSyncBadge('synced');
-          ui.showToast('⚡ อัปเดตข้อมูลเรียลไทม์ทันที (Instant Real-time Sync)', 'info');
         }
       } catch (err) {
         console.warn('Apply realtime snapshot warning:', err);
