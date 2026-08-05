@@ -724,7 +724,10 @@ class Store {
 
     // Dynamically calculate current registered count for each activity
     return activities.map(act => {
-      const activeRegs = registrations.filter(r => r.activityId === act.id && r.status !== 'cancelled');
+      const activeRegs = registrations.filter(r => 
+        String(r.activityId || '').trim().toLowerCase() === String(act.id || '').trim().toLowerCase() && 
+        r.status !== 'cancelled'
+      );
       return {
         ...act,
         registeredCount: activeRegs.length

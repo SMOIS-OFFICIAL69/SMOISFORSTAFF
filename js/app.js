@@ -114,12 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await store.fetchFromGoogleSheets();
         if (res && res.success && !res.skipped) {
           updateLiveSyncBadge('synced');
-          if (res.updated && _hasInitialFetched) {
-            populateCategoryDropdowns();
-            refreshHeaderProfile();
-            renderCurrentView();
-            refreshActiveModalsIfOpen();
-          }
+          populateCategoryDropdowns();
+          refreshHeaderProfile();
+          renderCurrentView();
+          refreshActiveModalsIfOpen();
           _hasInitialFetched = true;
         }
       } catch (e) {
