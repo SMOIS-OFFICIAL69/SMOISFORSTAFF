@@ -23,9 +23,24 @@ const UI = {
   formatThaiDate(dateString) {
     if (!dateString) return '-';
     try {
-      const date = new Date(dateString);
-      const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-      return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear() + 543}`;
+      const str = String(dateString).split('T')[0].trim();
+      const parts = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (parts) {
+        const y = parseInt(parts[1], 10);
+        const m = parseInt(parts[2], 10) - 1;
+        const d = parseInt(parts[3], 10);
+        const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const thYear = y > 2400 ? y : y + 543;
+        return `${d} ${months[m]} ${thYear}`;
+      }
+
+      const date = new Date(str.replace(/-/g, '/'));
+      if (!isNaN(date.getTime())) {
+        const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const thYear = date.getFullYear() > 2400 ? date.getFullYear() : date.getFullYear() + 543;
+        return `${date.getDate()} ${months[date.getMonth()]} ${thYear}`;
+      }
+      return dateString;
     } catch (e) {
       return dateString;
     }

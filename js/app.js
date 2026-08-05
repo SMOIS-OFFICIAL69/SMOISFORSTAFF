@@ -1147,6 +1147,78 @@ document.addEventListener('DOMContentLoaded', () => {
   const activityForm = document.getElementById('activity-form');
   const actFormModalTitle = document.getElementById('act-form-modal-title');
 
+  function formatDateForInput(dateInput) {
+    if (!dateInput) return new Date().toISOString().split('T')[0];
+
+    const str = String(dateInput).trim();
+    if (!str) return new Date().toISOString().split('T')[0];
+
+    // 1. Direct YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return str;
+    }
+
+    // 2. YYYY-M-D or ISO string like 2026-08-10T00:00:00.000Z or 2026-08-10 00:00:00
+    const firstPart = str.split('T')[0].split(' ')[0];
+    const ymdMatch = firstPart.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (ymdMatch) {
+      let y = parseInt(ymdMatch[1], 10);
+      if (y > 2400) y -= 543;
+      const m = String(ymdMatch[2]).padStart(2, '0');
+      const d = String(ymdMatch[3]).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // 3. DD/MM/YYYY or DD-MM-YYYY format
+    const dmyMatch = firstPart.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmyMatch) {
+      const d = String(dmyMatch[1]).padStart(2, '0');
+      const m = String(dmyMatch[2]).padStart(2, '0');
+      let y = parseInt(dmyMatch[3], 10);
+      if (y > 2400) y -= 543;
+      return `${y}-${m}-${d}`;
+    }
+
+    // 4. Thai text format like "10 ส.ค. 2569" or "10 สิงหาคม 2569"
+    const thaiMonths = {
+      'ม.ค.': '01', 'มกราคม': '01',
+      'ก.พ.': '02', 'กุมภาพันธ์': '02',
+      'มี.ค.': '03', 'มีนาคม': '03',
+      'เม.ย.': '04', 'เมษายน': '04',
+      'พ.ค.': '05', 'พฤษภาคม': '05',
+      'มิ.ย.': '06', 'มิถุนายน': '06',
+      'ก.ค.': '07', 'กรกฎาคม': '07',
+      'ส.ค.': '08', 'สิงหาคม': '08',
+      'ก.ย.': '09', 'กันยายน': '09',
+      'ต.ค.': '10', 'ตุลาคม': '10',
+      'พ.ย.': '11', 'พฤศจิกายน': '11',
+      'ธ.ค.': '12', 'ธันวาคม': '12'
+    };
+    for (const [thName, monthNum] of Object.entries(thaiMonths)) {
+      if (str.includes(thName)) {
+        const parts = str.split(/\s+/);
+        const day = String(parseInt(parts[0], 10) || 1).padStart(2, '0');
+        let year = parseInt(parts[parts.length - 1], 10) || new Date().getFullYear();
+        if (year > 2400) year -= 543;
+        return `${year}-${monthNum}-${day}`;
+      }
+    }
+
+    // 5. Standard Date object fallback using local time
+    try {
+      const parsedDate = new Date(str.replace(/-/g, '/'));
+      if (!isNaN(parsedDate.getTime())) {
+        let year = parsedDate.getFullYear();
+        if (year > 2400) year -= 543;
+        const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(parsedDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    } catch (e) {}
+
+    return new Date().toISOString().split('T')[0];
+  }
+
   function showActivityFormModal(actId = null) {
     activityForm.reset();
     if (actId) {
@@ -1160,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('act-form-desc').value = act.description;
       document.getElementById('act-form-category').value = act.category;
       document.getElementById('act-form-hours').value = act.hours;
-      document.getElementById('act-form-date').value = act.date;
+      document.getElementById('act-form-date').value = formatDateForInput(act.date);
       document.getElementById('act-form-time').value = act.time;
       document.getElementById('act-form-location').value = act.location;
       document.getElementById('act-form-capacity').value = act.maxCapacity;
@@ -1170,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', () => {
       populateCategoryDropdowns();
       actFormModalTitle.textContent = 'เพิ่มกิจกรรมใหม่';
       document.getElementById('act-form-id').value = '';
-      document.getElementById('act-form-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('act-form-date').value = formatDateForInput(new Date());
     }
     openModal('activity-form-modal');
   }
@@ -1196,7 +1268,7 @@ document.addEventListener('DOMContentLoaded', () => {
       description: document.getElementById('act-form-desc').value.trim(),
       category: document.getElementById('act-form-category').value,
       hours: parseFloat(document.getElementById('act-form-hours').value) || 3,
-      date: document.getElementById('act-form-date').value,
+      date: formatDateForInput(document.getElementById('act-form-date').value),
       time: document.getElementById('act-form-time').value.trim(),
       location: document.getElementById('act-form-location').value.trim(),
       maxCapacity: parseInt(document.getElementById('act-form-capacity').value) || 30,
