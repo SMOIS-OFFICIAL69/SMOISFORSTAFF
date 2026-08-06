@@ -2061,8 +2061,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (manualFetchSheetsBtn) {
     manualFetchSheetsBtn.addEventListener('click', async () => {
-      const result = await store.fetchFromGoogleSheets();
+      const result = await store.fetchFromGoogleSheets(true);
       if (result.success) {
+        populateCategoryDropdowns();
+        populateUserDropdown();
+        refreshHeaderProfile();
         renderCurrentView();
         ui.showToast('ดึงข้อมูลล่าสุดจาก Google Sheets เรียบร้อยแล้ว', 'success');
       } else {

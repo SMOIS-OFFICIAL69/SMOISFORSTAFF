@@ -1226,15 +1226,17 @@ function writeToSheet(ss, sheetName, items) {
 function readFromSheet(ss, sheetName) {
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return [];
-  var data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return [];
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
+  var data = sheet.getRange(1, 1, lastRow, lastCol).getDisplayValues();
   var headers = data[0];
 
   if (headers.length === 1 && headers[0] === "Category") {
     var catList = [];
     for (var i = 1; i < data.length; i++) {
       if (data[i][0] !== "" && data[i][0] !== null && data[i][0] !== undefined) {
-        catList.push(String(data[i][0]));
+        catList.push(String(data[i][0]).trim());
       }
     }
     return catList;
@@ -1243,6 +1245,7 @@ function readFromSheet(ss, sheetName) {
   var result = [];
   for (var i = 1; i < data.length; i++) {
     var obj = {};
+    var hasContent = false;
     for (var j = 0; j < headers.length; j++) {
       var val = data[i][j];
       if (val === "" || val === null || val === undefined) {
@@ -1252,8 +1255,9 @@ function readFromSheet(ss, sheetName) {
       } else {
         obj[headers[j]] = val;
       }
+      if (val !== "") hasContent = true;
     }
-    result.push(obj);
+    if (hasContent) result.push(obj);
   }
   return result;
 }</code></pre>

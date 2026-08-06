@@ -302,15 +302,15 @@ class Store {
     });
   }
 
-  async fetchFromGoogleSheets() {
+  async fetchFromGoogleSheets(force = false) {
     const url = this.getGoogleSheetUrl();
     if (!url) return { success: false, message: 'ยังไม่ได้ระบุ Google Sheets Web App URL' };
 
     const timeSinceMutation = Date.now() - (this._lastLocalMutationTimestamp || 0);
     const timeSinceSync = Date.now() - (window._lastSyncTimestamp || 0);
 
-    // Skip fetch if currently pushing or recently mutated to avoid race condition with stale Google Sheet data
-    if (window._isSyncingToSheets || timeSinceSync < 4000 || timeSinceMutation < 4000) {
+    // Skip fetch if currently pushing or recently mutated to avoid race condition (unless force === true)
+    if (!force && (window._isSyncingToSheets || timeSinceSync < 4000 || timeSinceMutation < 4000)) {
       return { success: true, skipped: true };
     }
 
@@ -323,6 +323,24 @@ class Store {
       if (data && typeof data === 'object') {
         let hasRemoteData = false;
         const prevFingerprint = this.getDataFingerprint();
+
+        // Helper to format remote date strings accurately in local timezone
+        const parseRemoteDateString = (dStr) => {
+          if (!dStr) return '';
+          const s = String(dStr).trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+          if (s.includes('T')) {
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) {
+              let y = d.getFullYear();
+              if (y > 2400) y -= 543;
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              return `${y}-${m}-${day}`;
+            }
+          }
+          return s;
+        };
 
         // 1. Synchronize Remote Workers
         if (Array.isArray(data.workers)) {
@@ -343,6 +361,7 @@ class Store {
         if (Array.isArray(data.activities)) {
           let remoteActivities = data.activities.map(a => ({
             ...a,
+            date: parseRemoteDateString(a.date),
             hours: parseFloat(a.hours) || 0,
             maxCapacity: parseInt(a.maxCapacity) || 30
           }));
