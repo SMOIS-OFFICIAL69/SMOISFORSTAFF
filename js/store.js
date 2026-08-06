@@ -115,25 +115,22 @@ class Store {
   }
 
   init() {
-    const hasWorkersKey = localStorage.getItem(STORAGE_KEYS.WORKERS);
-    const hasActivitiesKey = localStorage.getItem(STORAGE_KEYS.ACTIVITIES);
-    const sheetUrl = localStorage.getItem(STORAGE_KEYS.GOOGLE_SHEET_URL) || DEFAULT_GOOGLE_SHEET_URL;
-
-    // Only populate seed defaults if Google Sheet URL is NOT set and local storage is missing
-    if (!hasWorkersKey && !sheetUrl) {
+    const rawWorkers = localStorage.getItem(STORAGE_KEYS.WORKERS);
+    let currentWorkers = [];
+    try { currentWorkers = rawWorkers ? JSON.parse(rawWorkers) : []; } catch(e) {}
+    if (!rawWorkers || !Array.isArray(currentWorkers) || currentWorkers.length === 0) {
       localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(DEFAULT_WORKERS));
-    } else if (!hasWorkersKey) {
-      localStorage.setItem(STORAGE_KEYS.WORKERS, '[]');
     }
 
-    if (!hasActivitiesKey && !sheetUrl) {
+    const rawActivities = localStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+    let currentActivities = [];
+    try { currentActivities = rawActivities ? JSON.parse(rawActivities) : []; } catch(e) {}
+    if (!rawActivities || !Array.isArray(currentActivities) || currentActivities.length === 0) {
       localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(DEFAULT_ACTIVITIES));
-    } else if (!hasActivitiesKey) {
-      localStorage.setItem(STORAGE_KEYS.ACTIVITIES, '[]');
     }
 
     if (!localStorage.getItem(STORAGE_KEYS.REGISTRATIONS)) {
-      localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, '[]');
+      localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(DEFAULT_REGISTRATIONS));
     }
     if (!localStorage.getItem(STORAGE_KEYS.CATEGORIES)) {
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES));
