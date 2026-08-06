@@ -154,7 +154,7 @@
     <!-- VIEW 1: All Activities List (Worker / Guest) -->
     <section id="view-activities" class="view-section active">
       <!-- Filter Bar -->
-      <div class="filter-bar">
+      <div class="filter-bar" id="activities-filter-bar">
         <div class="filter-group">
           <div class="search-input-wrapper">
             <input type="text" id="search-activity-input" class="search-input"
@@ -188,6 +188,9 @@
       <div class="activity-grid" id="activities-cards-grid">
         <!-- Dynamic Cards Rendered Here -->
       </div>
+
+      <!-- Locked View for Logged-Out Users -->
+      <div id="activities-locked-container" style="display:none;"></div>
     </section>
 
     <!-- VIEW 2: My Summary & History -->
@@ -1069,7 +1072,7 @@
               คัดลอกโค้ดสคริปต์</button>
             <pre
               style="max-height:220px; overflow-y:auto; background:#1e293b; color:#f8fafc; padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.75rem; line-height:1.4;"
-              id="gas-code-block"><code>function doPost(e) {
+                            id="gas-code-block"><code>function doPost(e) {
   try {
     var raw = "";
     if (e && e.postData && e.postData.contents) {
@@ -1086,11 +1089,15 @@
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if (data.action === "syncAll") {
+      // 1. บันทึกข้อมูลรวมลงแผ่นสรุปหลัก
       writeToSheet(ss, "Workers", data.workers);
       writeToSheet(ss, "Activities", data.activities);
       writeToSheet(ss, "Registrations", data.registrations);
       writeToSheet(ss, "Categories", data.categories);
       writeToSheet(ss, "Admins", data.admins);
+
+      // 2. แยกบันทึกรายชื่อผู้ลงทะเบียนแยกรายกิจกรรมเป็นแท็บเฉพาะ (Act_ID_Title)
+      syncIndividualActivitySheets(ss, data.activities, data.registrations);
     }
     return ContentService.createTextOutput(JSON.stringify({status:"success"})).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
@@ -1100,14 +1107,70 @@
 
 function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // อ่านรายชื่อผู้ลงทะเบียนจากแท็บแยกรายกิจกรรม (ถ้ามี) เพื่อรักษาลำดับแถวตามชีท
+  var registrations = readRegistrationsFromActivitySheets(ss);
+  if (!registrations || registrations.length === 0) {
+    registrations = readFromSheet(ss, "Registrations");
+  }
+
   var result = {
     workers: readFromSheet(ss, "Workers"),
     activities: readFromSheet(ss, "Activities"),
-    registrations: readFromSheet(ss, "Registrations"),
+    registrations: registrations,
     categories: readFromSheet(ss, "Categories"),
     admins: readFromSheet(ss, "Admins")
   };
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function syncIndividualActivitySheets(ss, activities, registrations) {
+  if (!activities || !Array.isArray(activities)) return;
+  var regs = Array.isArray(registrations) ? registrations : [];
+
+  var regByAct = {};
+  regs.forEach(function(r) {
+    if (!r || !r.activityId) return;
+    var actId = String(r.activityId).trim();
+    if (!regByAct[actId]) regByAct[actId] = [];
+    regByAct[actId].push(r);
+  });
+
+  activities.forEach(function(act) {
+    if (!act || !act.id) return;
+    var actId = String(act.id).trim();
+    var safeTitle = (act.title || actId).replace(/[:\/\\?\*\[\]]/g, "_").substring(0, 15);
+    var sheetName = "Act_" + actId + "_" + safeTitle;
+
+    var actRegs = regByAct[actId] || [];
+    writeToSheet(ss, sheetName, actRegs);
+  });
+}
+
+function readRegistrationsFromActivitySheets(ss) {
+  var sheets = ss.getSheets();
+  var allRegs = [];
+  var seenKeys = {};
+
+  sheets.forEach(function(sheet) {
+    var sName = sheet.getName();
+    if (sName.indexOf("Act_") === 0) {
+      var regs = readFromSheet(ss, sName);
+      if (Array.isArray(regs)) {
+        regs.forEach(function(r) {
+          if (r && r.workerId && r.activityId) {
+            var key = String(r.workerId).trim() + "_" + String(r.activityId).trim();
+            if (!seenKeys[key]) {
+              seenKeys[key] = true;
+              allRegs.push(r);
+            }
+          }
+        });
+      }
+    }
+  });
+
+  return allRegs;
 }
 
 function writeToSheet(ss, sheetName, items) {

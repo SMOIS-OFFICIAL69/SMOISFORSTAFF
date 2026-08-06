@@ -736,6 +736,70 @@ class Store {
     return true;
   }
 
+  reorderWorker(id, direction) {
+    const workers = this.getWorkers();
+    const index = workers.findIndex(w => String(w.id).toUpperCase() === String(id).toUpperCase());
+    if (index === -1) return false;
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= workers.length) return false;
+
+    const temp = workers[index];
+    workers[index] = workers[newIndex];
+    workers[newIndex] = temp;
+
+    localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(workers));
+    this.autoSyncToSheets();
+    this.broadcastDataUpdate({ action: 'reorderWorker', id, direction });
+    return true;
+  }
+
+  reorderActivity(id, direction) {
+    const activities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES)) || [];
+    const index = activities.findIndex(a => String(a.id).toUpperCase() === String(id).toUpperCase());
+    if (index === -1) return false;
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= activities.length) return false;
+
+    const temp = activities[index];
+    activities[index] = activities[newIndex];
+    activities[newIndex] = temp;
+
+    localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
+    this.autoSyncToSheets();
+    this.broadcastDataUpdate({ action: 'reorderActivity', id, direction });
+    return true;
+  }
+
+  moveWorker(fromIndex, toIndex) {
+    const workers = this.getWorkers();
+    if (fromIndex < 0 || fromIndex >= workers.length || toIndex < 0 || toIndex >= workers.length) return false;
+    if (fromIndex === toIndex) return false;
+
+    const [movedWorker] = workers.splice(fromIndex, 1);
+    workers.splice(toIndex, 0, movedWorker);
+
+    localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(workers));
+    this.autoSyncToSheets();
+    this.broadcastDataUpdate({ action: 'moveWorker', fromIndex, toIndex });
+    return true;
+  }
+
+  moveActivity(fromIndex, toIndex) {
+    const activities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES)) || [];
+    if (fromIndex < 0 || fromIndex >= activities.length || toIndex < 0 || toIndex >= activities.length) return false;
+    if (fromIndex === toIndex) return false;
+
+    const [movedAct] = activities.splice(fromIndex, 1);
+    activities.splice(toIndex, 0, movedAct);
+
+    localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
+    this.autoSyncToSheets();
+    this.broadcastDataUpdate({ action: 'moveActivity', fromIndex, toIndex });
+    return true;
+  }
+
   // --- Activities ---
   getActivities() {
     const activities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES)) || [];

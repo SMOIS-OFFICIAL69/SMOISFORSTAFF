@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res && res.success && !res.skipped) {
           updateLiveSyncBadge('synced');
           populateCategoryDropdowns();
+          populateUserDropdown();
           refreshHeaderProfile();
           renderCurrentView();
           refreshActiveModalsIfOpen();
@@ -248,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await triggerSharedDataSync();
     _hasInitialFetched = true;
     populateCategoryDropdowns();
+    populateUserDropdown();
     refreshHeaderProfile();
     renderCurrentView();
     startAutoPolling();
@@ -264,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const expectedOptions = ['all', ...categories];
 
       const isMatch = existingOptions.length === expectedOptions.length &&
-                      existingOptions.every((val, idx) => val === expectedOptions[idx]);
+        existingOptions.every((val, idx) => val === expectedOptions[idx]);
 
       if (!isMatch) {
         filterCategorySelect.innerHTML = `<option value="all">หมวดหมู่ทั้งหมด</option>` +
@@ -284,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const expectedFormOpts = [...categories, '__NEW__'];
 
       const isFormMatch = existingFormOpts.length === expectedFormOpts.length &&
-                          existingFormOpts.every((val, idx) => val === expectedFormOpts[idx]);
+        existingFormOpts.every((val, idx) => val === expectedFormOpts[idx]);
 
       if (!isFormMatch) {
         actFormCategorySelect.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('') +
@@ -294,6 +296,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentFormVal && expectedFormOpts.includes(currentFormVal)) {
         actFormCategorySelect.value = currentFormVal;
       }
+    }
+  }
+
+  function populateUserDropdown() {
+    const userSelectDropdown = document.getElementById('user-select-dropdown');
+    if (!userSelectDropdown) return;
+
+    const workers = store.getWorkers();
+    const currentVal = userSelectDropdown.value;
+
+    userSelectDropdown.innerHTML = `<option value="">-- เลือกผู้ปฏิบัติงาน --</option>` +
+      workers.map(w => `<option value="${w.id}">${w.name} (${w.id})</option>`).join('');
+
+    if (currentVal && workers.some(w => w.id === currentVal)) {
+      userSelectDropdown.value = currentVal;
     }
   }
 
@@ -596,6 +613,40 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4. VIEW 1: Activities Grid Renderer & Event Listeners
   // --------------------------------------------------------------------------
   function renderActivitiesGrid() {
+    const activitiesFilterBar = document.getElementById('activities-filter-bar');
+    const activitiesLockedContainer = document.getElementById('activities-locked-container');
+    const isWorkerAuth = store.isWorkerAuthenticated();
+    const isAdmin = store.getCurrentRole() === 'admin' && store.isAdminAuthenticated();
+
+    if (!isWorkerAuth && !isAdmin) {
+      if (activitiesFilterBar) activitiesFilterBar.style.display = 'none';
+      if (activitiesCardsGrid) activitiesCardsGrid.style.display = 'none';
+      if (activitiesLockedContainer) {
+        activitiesLockedContainer.style.display = 'block';
+        activitiesLockedContainer.innerHTML = `
+          <div class="hours-progress-card" style="text-align:center; padding:3.5rem 1.5rem; max-width:700px; margin: 2rem auto;">
+            <div style="font-size:3.5rem; margin-bottom:1rem;">🔒</div>
+            <h2 style="font-size:1.4rem; font-weight:600; margin-bottom:0.5rem; color:var(--text-main);">กรุณาเข้าสู่ระบบด้วยรหัสนักศึกษา</h2>
+            <p style="color:var(--text-muted); max-width:520px; margin:0 auto 1.5rem auto; line-height:1.6;">
+              ท่านต้องเข้าสู่ระบบด้วยรหัสนักศึกษาหรือรหัสผู้ปฏิบัติงานก่อน จึงจะสามารถเข้าถึงรายการกิจกรรมทั้งหมด ค้นหา กรองกิจกรรม และลงทะเบียนเข้าร่วมกิจกรรมได้
+            </p>
+            <button class="btn btn-primary trigger-worker-login-btn" style="font-size:1rem; padding:0.75rem 1.5rem;">🔑 เข้าสู่ระบบด้วยรหัสนักศึกษา</button>
+          </div>
+        `;
+        activitiesLockedContainer.querySelectorAll('.trigger-worker-login-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.getElementById('worker-student-id').value = '';
+            openModal('worker-login-modal');
+          });
+        });
+      }
+      return;
+    }
+
+    if (activitiesFilterBar) activitiesFilterBar.style.display = 'flex';
+    if (activitiesCardsGrid) activitiesCardsGrid.style.display = 'grid';
+    if (activitiesLockedContainer) activitiesLockedContainer.style.display = 'none';
+
     const currentUserId = store.getCurrentUserId();
     const activities = store.getActivities();
     const userRegs = store.getRegistrations().filter(r => r.workerId === currentUserId && r.status !== 'cancelled');
@@ -783,6 +834,83 @@ document.addEventListener('DOMContentLoaded', () => {
         showActivityRosterModal(actId);
       });
     });
+
+    // Reorder Activity Listeners
+    document.querySelectorAll('.btn-reorder-act-up').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const actId = e.currentTarget.getAttribute('data-act-id');
+        if (store.reorderActivity(actId, 'up')) {
+          ui.showToast('เลื่อนลำดับกิจกรรมขึ้นเรียบร้อยแล้ว', 'info');
+          renderCurrentView();
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-reorder-act-down').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const actId = e.currentTarget.getAttribute('data-act-id');
+        if (store.reorderActivity(actId, 'down')) {
+          ui.showToast('เลื่อนลำดับกิจกรรมลงเรียบร้อยแล้ว', 'info');
+          renderCurrentView();
+        }
+      });
+    });
+
+    // Drag & Drop Reordering for Activities
+    setupTableDragAndDrop(adminActivitiesTableBody, (fromIdx, toIdx) => {
+      if (store.moveActivity(fromIdx, toIdx)) {
+        ui.showToast('ลากสลับลำดับกิจกรรมเรียบร้อยแล้ว', 'success');
+        renderCurrentView();
+      }
+    });
+  }
+
+  function setupTableDragAndDrop(tbody, moveCallback) {
+    if (!tbody) return;
+    let draggedIndex = null;
+
+    tbody.querySelectorAll('.draggable-row').forEach(row => {
+      row.addEventListener('dragstart', (e) => {
+        draggedIndex = parseInt(row.getAttribute('data-index'), 10);
+        row.classList.add('dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', String(draggedIndex));
+        }
+      });
+
+      row.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+        tbody.querySelectorAll('.draggable-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+      });
+
+      row.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        const targetIndex = parseInt(row.getAttribute('data-index'), 10);
+        if (draggedIndex === null || isNaN(draggedIndex) || targetIndex === draggedIndex) return;
+
+        tbody.querySelectorAll('.draggable-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+        if (targetIndex < draggedIndex) {
+          row.classList.add('drag-over-top');
+        } else {
+          row.classList.add('drag-over-bottom');
+        }
+      });
+
+      row.addEventListener('dragleave', () => {
+        row.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+
+      row.addEventListener('drop', (e) => {
+        e.preventDefault();
+        tbody.querySelectorAll('.draggable-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+        const targetIndex = parseInt(row.getAttribute('data-index'), 10);
+        if (draggedIndex !== null && !isNaN(draggedIndex) && targetIndex !== draggedIndex) {
+          moveCallback(draggedIndex, targetIndex);
+        }
+      });
+    });
   }
 
   function renderAdminRoster() {
@@ -823,6 +951,35 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       });
+    });
+
+    // Reorder Worker Listeners
+    document.querySelectorAll('.btn-reorder-worker-up').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const workerId = e.currentTarget.getAttribute('data-worker-id');
+        if (store.reorderWorker(workerId, 'up')) {
+          ui.showToast('เลื่อนลำดับผู้ปฏิบัติงานขึ้นเรียบร้อยแล้ว', 'info');
+          renderCurrentView();
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-reorder-worker-down').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const workerId = e.currentTarget.getAttribute('data-worker-id');
+        if (store.reorderWorker(workerId, 'down')) {
+          ui.showToast('เลื่อนลำดับผู้ปฏิบัติงานลงเรียบร้อยแล้ว', 'info');
+          renderCurrentView();
+        }
+      });
+    });
+
+    // Drag & Drop Reordering for Workers
+    setupTableDragAndDrop(adminRosterTableBody, (fromIdx, toIdx) => {
+      if (store.moveWorker(fromIdx, toIdx)) {
+        ui.showToast('ลากสลับลำดับผู้ปฏิบัติงานเรียบร้อยแล้ว', 'success');
+        renderCurrentView();
+      }
     });
   }
 
@@ -1214,7 +1371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const day = String(parsedDate.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return new Date().toISOString().split('T')[0];
   }

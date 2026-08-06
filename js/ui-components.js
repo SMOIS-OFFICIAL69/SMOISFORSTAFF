@@ -302,8 +302,19 @@ const UI = {
       else statusBadge = `<span class="status-badge completed">เสร็จสิ้น</span>`;
 
       return `
-        <tr>
-          <td style="font-weight:600; text-align:center;">${idx + 1}</td>
+        <tr class="draggable-row" draggable="true" data-index="${idx}" data-act-id="${act.id}">
+          <td style="font-weight:600; text-align:center; vertical-align:middle; min-width:85px;">
+            <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+              <span class="drag-handle" title="ลากเพื่อเปลี่ยนลำดับกิจกรรม" style="cursor:grab; font-size:1.15rem; color:var(--text-muted); user-select:none;">⋮⋮</span>
+              <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                <span>${idx + 1}</span>
+                <div style="display:flex; gap:2px;">
+                  <button type="button" class="btn-reorder btn-reorder-act-up" data-act-id="${act.id}" ${idx === 0 ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : ''} title="เลื่อนลำดับกิจกรรมขึ้น">▲</button>
+                  <button type="button" class="btn-reorder btn-reorder-act-down" data-act-id="${act.id}" ${idx === activities.length - 1 ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : ''} title="เลื่อนลำดับกิจกรรมลง">▼</button>
+                </div>
+              </div>
+            </div>
+          </td>
           <td>
             <div style="display:flex; align-items:center; gap:12px;">
               <img src="${act.banner}" style="width:48px; height:48px; border-radius:var(--radius-md); object-fit:cover;" alt="banner" />
@@ -349,8 +360,19 @@ const UI = {
       const isTargetMet = summary.completedHours >= summary.targetHours;
 
       return `
-        <tr>
-          <td style="font-weight:600; text-align:center;">${idx + 1}</td>
+        <tr class="draggable-row" draggable="true" data-index="${idx}" data-worker-id="${w.id}">
+          <td style="font-weight:600; text-align:center; vertical-align:middle; min-width:85px;">
+            <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+              <span class="drag-handle" title="ลากเพื่อเปลี่ยนลำดับผู้ปฏิบัติงาน" style="cursor:grab; font-size:1.15rem; color:var(--text-muted); user-select:none;">⋮⋮</span>
+              <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                <span>${idx + 1}</span>
+                <div style="display:flex; gap:2px;">
+                  <button type="button" class="btn-reorder btn-reorder-worker-up" data-worker-id="${w.id}" ${idx === 0 ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : ''} title="เลื่อนลำดับผู้ปฏิบัติงานขึ้น">▲</button>
+                  <button type="button" class="btn-reorder btn-reorder-worker-down" data-worker-id="${w.id}" ${idx === workers.length - 1 ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : ''} title="เลื่อนลำดับผู้ปฏิบัติงานลง">▼</button>
+                </div>
+              </div>
+            </div>
+          </td>
           <td>
             <div style="display:flex; align-items:center; gap:10px;">
               <img src="${w.avatar}" class="previewable-avatar" data-img-src="${w.avatar}" data-img-caption="${w.name} (${w.id})" style="width:38px; height:38px; border-radius:var(--radius-full); object-fit:cover; cursor:pointer;" title="คลิกเพื่อดูรูปโปรไฟล์ขยายเต็ม" alt="avatar" />
