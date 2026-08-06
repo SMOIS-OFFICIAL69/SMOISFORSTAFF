@@ -1,0 +1,74 @@
+{
+  "version": "1.0",
+  "exportedAt": "2026-08-06T21:21:00Z",
+  "appName": "Smo-Staff Student Club Management System",
+  "workers": [
+    {
+      "id": "683450329-0",
+      "name": "ศาตนันทน์ ดวงสีทอง",
+      "nickname": "ศา",
+      "year": "ชั้นปีที่ 3",
+      "department": "สาขาวิชาเทคโนโลยีสารสนเทศ",
+      "position": "ฝ่ายวิชาการ",
+      "email": "Satanan.d@kkumail.com",
+      "targetHours": 200,
+      "avatar": "https://drive.google.com/thumbnail?id=1O_DsvlU1JNpLAVuS9U19JSnGLySUluNn&sz=w800"
+    },
+    {
+      "id": "673450351-6",
+      "name": "นายอภินันต์ คำดี",
+      "nickname": "อภิ",
+      "year": "ชั้นปีที่ 2",
+      "department": "สาขาวิทยาการคอมพิวเตอร์",
+      "position": "นายกสโมสรนักศึกษา",
+      "email": "673450351-6@org.mail",
+      "targetHours": 30,
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250"
+    }
+  ],
+  "activities": [
+    {
+      "id": "ACT-2026-001",
+      "title": "อบรมปฐมนิเทศผู้ปฏิบัติงานและระเบียบปฏิบัติสโมสรนักศึกษา",
+      "description": "กิจกรรมอบรมชี้แจงแนวปฏิบัติ การบันทึกภาระงาน และการสะสมชั่วโมงสำหรับผู้ปฏิบัติงานสโมสรนักศึกษา",
+      "category": "งานอบรม/สัมมนา",
+      "date": "2026-08-10",
+      "time": "09:00 - 16:00 น.",
+      "location": "ห้องประชุมสโมสรนักศึกษา อาคารกิจกรรม",
+      "hours": 6,
+      "maxCapacity": 50,
+      "status": "open",
+      "banner": "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      "id": "ACT-2026-002",
+      "title": "กิจกรรมจิตอาสาพัฒนาและจัดเตรียมสถานที่สถาบัน",
+      "description": "บำเพ็ญประโยชน์ ทำความสะอาด และปรับปรุงทัศนียภาพพื้นที่ส่วนกลางสโมสรนักศึกษา",
+      "category": "งานจิตอาสา",
+      "date": "2026-08-15",
+      "time": "08:30 - 12:30 น.",
+      "location": "ลานกิจกรรมสโมสรนักศึกษา",
+      "hours": 4,
+      "maxCapacity": 40,
+      "status": "open",
+      "banner": "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&q=80&w=600"
+    }
+  ],
+  "registrations": [],
+  "categories": [
+    "งานอบรม/สัมมนา",
+    "งานจิตอาสา",
+    "งานบริการสังคม",
+    "งานสนับสนุนองค์กร"
+  ],
+  "admins": [
+    {
+      "username": "admin",
+      "password": "admin123",
+      "name": "ผู้ดูแลระบบหลัก (Super Admin)",
+      "department": "ฝ่ายบริหารและเทคโนโลยี",
+      "role": "Super Admin",
+      "createdAt": "2026-08-01"
+    }
+  ]
+}

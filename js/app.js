@@ -2096,6 +2096,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const exportBackupJsonBtn = document.getElementById('export-backup-json-btn');
+  const importBackupJsonBtn = document.getElementById('import-backup-json-btn');
+  const importBackupJsonFile = document.getElementById('import-backup-json-file');
+
+  if (exportBackupJsonBtn) {
+    exportBackupJsonBtn.addEventListener('click', () => {
+      const jsonStr = store.exportBackupData();
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.download = `smo_staff_backup_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      ui.showToast('ดาวน์โหลดไฟล์สำรองข้อมูล (.json) เรียบร้อยแล้ว', 'success');
+    });
+  }
+
+  if (importBackupJsonBtn && importBackupJsonFile) {
+    importBackupJsonBtn.addEventListener('click', () => {
+      importBackupJsonFile.click();
+    });
+
+    importBackupJsonFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = store.importBackupData(event.target.result);
+        if (result.success) {
+          populateCategoryDropdowns();
+          populateUserDropdown();
+          refreshHeaderProfile();
+          renderCurrentView();
+          ui.showToast(result.message, 'success');
+        } else {
+          ui.showToast(result.message, 'danger');
+        }
+        importBackupJsonFile.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
+
   if (copyGasCodeBtn) {
     copyGasCodeBtn.addEventListener('click', () => {
       const codeBlock = document.getElementById('gas-code-block');

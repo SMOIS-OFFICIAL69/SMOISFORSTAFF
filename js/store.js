@@ -117,14 +117,14 @@ class Store {
   init() {
     const rawWorkers = localStorage.getItem(STORAGE_KEYS.WORKERS);
     let currentWorkers = [];
-    try { currentWorkers = rawWorkers ? JSON.parse(rawWorkers) : []; } catch(e) {}
+    try { currentWorkers = rawWorkers ? JSON.parse(rawWorkers) : []; } catch (e) { }
     if (!rawWorkers || !Array.isArray(currentWorkers) || currentWorkers.length === 0) {
       localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(DEFAULT_WORKERS));
     }
 
     const rawActivities = localStorage.getItem(STORAGE_KEYS.ACTIVITIES);
     let currentActivities = [];
-    try { currentActivities = rawActivities ? JSON.parse(rawActivities) : []; } catch(e) {}
+    try { currentActivities = rawActivities ? JSON.parse(rawActivities) : []; } catch (e) { }
     if (!rawActivities || !Array.isArray(currentActivities) || currentActivities.length === 0) {
       localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(DEFAULT_ACTIVITIES));
     }
@@ -164,7 +164,7 @@ class Store {
           if (data && data.type === 'DATA_UPDATED') {
             window.dispatchEvent(new CustomEvent('smo-realtime-signal', { detail: data }));
           }
-        } catch (e) {}
+        } catch (e) { }
       };
 
       ws.onclose = () => {
@@ -172,7 +172,7 @@ class Store {
       };
 
       ws.onerror = () => {
-        try { ws.close(); } catch (e) {}
+        try { ws.close(); } catch (e) { }
       };
 
       this._realtimeSocket = ws;
@@ -211,7 +211,7 @@ class Store {
       if (this._realtimeSocket && this._realtimeSocket.readyState === WebSocket.OPEN) {
         try {
           this._realtimeSocket.send(JSON.stringify(payload));
-        } catch (e) {}
+        } catch (e) { }
       }
     } catch (e) {
       // Ignore broadcast errors
@@ -892,7 +892,8 @@ class Store {
   getRegistrations() {
     try {
       const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGISTRATIONS));
-      return Array.isArray(parsed) ? parsed : [];
+      const arr = Array.isArray(parsed) ? parsed : [];
+      return arr.filter(r => r && r.status !== 'cancelled');
     } catch (e) {
       return [];
     }
@@ -1082,12 +1083,26 @@ class Store {
   }
 
   cancelRegistration(workerId, activityId) {
-    let regs = this.getRegistrations();
-    const index = regs.findIndex(r => r.workerId === workerId && r.activityId === activityId && r.status !== 'cancelled');
+    let rawRegs = [];
+    try {
+      rawRegs = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGISTRATIONS)) || [];
+    } catch (e) {
+      rawRegs = [];
+    }
+
+    const cleanWorkerId = String(workerId || '').trim().toUpperCase();
+    const cleanActId = String(activityId || '').trim().toUpperCase();
+
+    const index = rawRegs.findIndex(r =>
+      r && String(r.workerId || '').trim().toUpperCase() === cleanWorkerId &&
+      String(r.activityId || '').trim().toUpperCase() === cleanActId &&
+      r.status !== 'cancelled'
+    );
 
     if (index !== -1) {
-      regs.splice(index, 1);
-      localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(regs));
+      rawRegs[index].status = 'cancelled';
+      rawRegs[index].cancelledAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(rawRegs));
 
       // Re-open activity if it was full
       const activity = this.getActivityById(activityId);
@@ -1164,6 +1179,38 @@ class Store {
       completedCount: history.filter(h => h.status === 'completed').length,
       history
     };
+  }
+
+  // --- Backup & Restore Methods ---
+  exportBackupData() {
+    const backup = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      appName: 'Smo-Staff Student Club Management System',
+      workers: this.getWorkers(),
+      activities: this.getActivities(),
+      registrations: JSON.parse(localStorage.getItem(STORAGE_KEYS.REGISTRATIONS)) || [],
+      categories: this.getCategories(),
+      admins: this.getAdmins()
+    };
+    return JSON.stringify(backup, null, 2);
+  }
+
+  importBackupData(jsonString) {
+    try {
+      const data = JSON.parse(jsonString);
+      if (!data || typeof data !== 'object') throw new Error('รูปแบบไฟล์ JSON ไม่ถูกต้อง');
+      if (Array.isArray(data.workers) && data.workers.length > 0) localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(data.workers));
+      if (Array.isArray(data.activities) && data.activities.length > 0) localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(data.activities));
+      if (Array.isArray(data.registrations)) localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(data.registrations));
+      if (Array.isArray(data.categories) && data.categories.length > 0) localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(data.categories));
+      if (Array.isArray(data.admins) && data.admins.length > 0) localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(data.admins));
+
+      this.autoSyncToSheets();
+      return { success: true, message: 'นำเข้าและฟื้นฟูข้อมูลสำรองเรียบร้อยแล้ว' };
+    } catch (e) {
+      return { success: false, message: 'เกิดข้อผิดพลาดในการนำเข้าไฟล์สำรอง: ' + e.message };
+    }
   }
 }
 

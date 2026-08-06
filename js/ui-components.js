@@ -412,7 +412,7 @@ const UI = {
     const completedHistory = history.filter(h => h.status === 'completed');
 
     const now = new Date();
-    const printDateStr = `${now.getDate()} ${['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'][now.getMonth()]} พ.ศ. ${now.getFullYear() + 543}`;
+    const printDateStr = `${now.getDate()} ${['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'][now.getMonth()]} พ.ศ. ${now.getFullYear() + 543}`;
 
     let rowsHtml = '';
     if (completedHistory.length === 0) {

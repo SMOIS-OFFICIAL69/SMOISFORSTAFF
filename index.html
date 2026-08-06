@@ -1037,13 +1037,19 @@
           </small>
         </div>
 
-        <!-- Sync Action Controls -->
+        <!-- Sync & Local Backup Action Controls -->
         <div
-          style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:1.5rem; padding:1rem; background:var(--bg-main); border-radius:var(--radius-md); border:1px solid var(--border-color);">
+          style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:1.5rem; padding:1rem; background:var(--bg-main); border-radius:var(--radius-md); border:1px solid var(--border-color); align-items:center;">
           <button type="button" class="btn btn-primary" id="manual-sync-sheets-btn">ซิงค์ส่งข้อมูลไปยัง Google Sheets
             ทันที</button>
           <button type="button" class="btn btn-outline" id="manual-fetch-sheets-btn">ดึงข้อมูลล่าสุดจาก Google
             Sheets</button>
+          <div style="width:100%; height:1px; background:var(--border-color); margin:4px 0;"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="export-backup-json-btn"
+            style="border:1px solid var(--border-color);">📥 ดาวน์โหลดไฟล์สำรองข้อมูล (.json)</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="import-backup-json-btn"
+            style="border:1px solid var(--border-color);">📤 นำเข้าฟื้นฟูไฟล์สำรองข้อมูล (.json)</button>
+          <input type="file" id="import-backup-json-file" accept=".json" style="display:none;">
         </div>
 
         <!-- How to Setup Guide & Script Code -->
@@ -1274,7 +1280,7 @@ function upsertRegistrations(ss, incomingRegs) {
   var mergedMap = {};
 
   existing.forEach(function(r) {
-    if (r && r.workerId && r.activityId) {
+    if (r && r.workerId && r.activityId && r.status !== 'cancelled') {
       var k = String(r.workerId).trim().toLowerCase() + "_" + String(r.activityId).trim().toLowerCase();
       mergedMap[k] = r;
     }
@@ -1283,7 +1289,9 @@ function upsertRegistrations(ss, incomingRegs) {
   incomingRegs.forEach(function(r) {
     if (r && r.workerId && r.activityId) {
       var k = String(r.workerId).trim().toLowerCase() + "_" + String(r.activityId).trim().toLowerCase();
-      if (mergedMap[k]) {
+      if (r.status === 'cancelled') {
+        delete mergedMap[k];
+      } else if (mergedMap[k]) {
         mergedMap[k] = Object.assign({}, mergedMap[k], r);
       } else {
         mergedMap[k] = r;

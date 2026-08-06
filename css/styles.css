@@ -1289,12 +1289,17 @@ textarea.form-control {
   white-space: nowrap;
   padding: 0.5rem 0.25rem 0.75rem 0.25rem;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
 }
+
 .nav-tabs::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+  display: none;
+  /* Chrome/Safari */
 }
+
 .tab-btn {
   flex-shrink: 0;
   touch-action: manipulation;
@@ -1314,6 +1319,7 @@ textarea.form-control {
 }
 
 @media (max-width: 768px) {
+
   /* Prevent automatic iOS input zoom */
   input[type="text"],
   input[type="number"],
@@ -1365,7 +1371,7 @@ textarea.form-control {
     font-size: 0.8rem;
   }
 
-  #worker-auth-wrapper, 
+  #worker-auth-wrapper,
   #admin-session-wrapper {
     width: 100%;
     justify-content: space-between;
@@ -1479,7 +1485,7 @@ textarea.form-control {
     font-size: 0.8rem;
   }
 
-  .data-table th, 
+  .data-table th,
   .data-table td {
     padding: 8px 8px;
   }
@@ -1559,11 +1565,13 @@ textarea.form-control {
     opacity: 0.7;
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   }
+
   70% {
     transform: scale(1.15);
     opacity: 1;
     box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
   }
+
   100% {
     transform: scale(0.9);
     opacity: 0.7;
