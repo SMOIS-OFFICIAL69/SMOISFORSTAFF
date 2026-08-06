@@ -1072,73 +1072,90 @@
               คัดลอกโค้ดสคริปต์</button>
             <pre
               style="max-height:220px; overflow-y:auto; background:#1e293b; color:#f8fafc; padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.75rem; line-height:1.4;"
-                            id="gas-code-block"><code>function doPost(e) {
-  var lock = LockService.getScriptLock();
-  var hasLock = lock.tryLock(15000);
-  if (!hasLock) {
-    return ContentService.createTextOutput(JSON.stringify({status:"error", message: "Server busy, please try again"})).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  try {
-    var raw = "";
-    if (e && e.postData && e.postData.contents) {
-      raw = e.postData.contents;
-    } else if (e && e.parameter && e.parameter.data) {
-      raw = e.parameter.data;
-    }
-    
-    if (!raw) {
-      return ContentService.createTextOutput(JSON.stringify({status:"error", message: "No data payload received"})).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    var data = JSON.parse(raw);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    if (data.action === "syncAll") {
-      // 1. บันทึกข้อมูลรวมลงแผ่นสรุปหลักอย่างปลอดภัย (เฉพาะเมื่อมีข้อมูล)
-      if (Array.isArray(data.workers) && data.workers.length > 0) writeToSheet(ss, "Workers", data.workers);
-      if (Array.isArray(data.activities) && data.activities.length > 0) writeToSheet(ss, "Activities", data.activities);
-      if (Array.isArray(data.registrations)) writeToSheet(ss, "Registrations", data.registrations);
-      if (Array.isArray(data.categories) && data.categories.length > 0) writeToSheet(ss, "Categories", data.categories);
-      if (Array.isArray(data.admins) && data.admins.length > 0) writeToSheet(ss, "Admins", data.admins);
-
-      // 2. แยกบันทึกรายชื่อผู้ลงทะเบียนแยกรายกิจกรรมเป็นแท็บเฉพาะ (Act_ID_Title)
-      if (Array.isArray(data.activities) && data.activities.length > 0) {
-        syncIndividualActivitySheets(ss, data.activities, data.registrations);
-      }
-    }
-    return ContentService.createTextOutput(JSON.stringify({status:"success"})).setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({status:"error", message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
-  } finally {
-    try { lock.releaseLock(); } catch(e) {}
-  }
+                            id="gas-code-block"><code>function doGet(e) {
+  return handleRequest(e, "GET");
 }
 
-function doGet(e) {
+function doPost(e) {
+  return handleRequest(e, "POST");
+}
+
+function handleRequest(e, method) {
   var lock = LockService.getScriptLock();
-  try { lock.waitLock(10000); } catch(err) {}
+  try { lock.waitLock(10000); } catch (err) {}
 
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    // อ่านรายชื่อผู้ลงทะเบียนจากแท็บแยกรายกิจกรรม (ถ้ามี) เพื่อรักษาลำดับแถวตามชีท
+    var action = "";
+    var payloadData = null;
+
+    if (e && e.parameter && e.parameter.action) {
+      action = e.parameter.action;
+    }
+
+    if (e && e.postData && e.postData.contents) {
+      try {
+        payloadData = JSON.parse(e.postData.contents);
+        if (payloadData && payloadData.action) action = payloadData.action;
+      } catch (pErr) {}
+    } else if (e && e.parameter && e.parameter.data) {
+      try {
+        payloadData = JSON.parse(e.parameter.data);
+        if (payloadData && payloadData.action) action = payloadData.action;
+      } catch (pErr) {}
+    }
+
+    // 1. ACTION: SYNC ALL (บันทึกข้อมูลทั้งหมด)
+    if (action === "syncAll" && payloadData) {
+      if (Array.isArray(payloadData.workers) && payloadData.workers.length > 0) {
+        writeToSheet(ss, "Workers", payloadData.workers);
+      }
+      if (Array.isArray(payloadData.activities) && payloadData.activities.length > 0) {
+        writeToSheet(ss, "Activities", payloadData.activities);
+      }
+      if (Array.isArray(payloadData.registrations)) {
+        writeToSheet(ss, "Registrations", payloadData.registrations);
+      }
+      if (Array.isArray(payloadData.categories) && payloadData.categories.length > 0) {
+        writeToSheet(ss, "Categories", payloadData.categories);
+      }
+      if (Array.isArray(payloadData.admins) && payloadData.admins.length > 0) {
+        writeToSheet(ss, "Admins", payloadData.admins);
+      }
+
+      if (Array.isArray(payloadData.activities) && payloadData.activities.length > 0) {
+        syncIndividualActivitySheets(ss, payloadData.activities, payloadData.registrations);
+      }
+
+      return jsonResponse({ status: "success", message: "บันทึกข้อมูลเรียบร้อยแล้ว" });
+    }
+
+    // 2. ACTION: GET ALL (อ่านข้อมูลทั้งหมด)
     var registrations = readRegistrationsFromActivitySheets(ss);
     if (!registrations || registrations.length === 0) {
       registrations = readFromSheet(ss, "Registrations");
     }
 
     var result = {
+      status: "success",
       workers: readFromSheet(ss, "Workers"),
       activities: readFromSheet(ss, "Activities"),
       registrations: registrations,
       categories: readFromSheet(ss, "Categories"),
       admins: readFromSheet(ss, "Admins")
     };
-    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+
+    return jsonResponse(result);
+  } catch (err) {
+    return jsonResponse({ status: "error", message: err.toString() });
   } finally {
-    try { lock.releaseLock(); } catch(e) {}
+    try { lock.releaseLock(); } catch (lErr) {}
   }
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function syncIndividualActivitySheets(ss, activities, registrations) {
@@ -1235,9 +1252,8 @@ function readFromSheet(ss, sheetName) {
   if (headers.length === 1 && headers[0] === "Category") {
     var catList = [];
     for (var i = 1; i < data.length; i++) {
-      if (data[i][0] !== "" && data[i][0] !== null && data[i][0] !== undefined) {
-        catList.push(String(data[i][0]).trim());
-      }
+      var cellVal = String(data[i][0] || "").trim();
+      if (cellVal) catList.push(cellVal);
     }
     return catList;
   }
@@ -1247,13 +1263,15 @@ function readFromSheet(ss, sheetName) {
     var obj = {};
     var hasContent = false;
     for (var j = 0; j < headers.length; j++) {
+      var key = String(headers[j] || "").trim();
+      if (!key) continue;
       var val = data[i][j];
       if (val === "" || val === null || val === undefined) {
-        obj[headers[j]] = "";
+        obj[key] = "";
       } else if (typeof val === "string" && (val.startsWith("{") || val.startsWith("["))) {
-        try { obj[headers[j]] = JSON.parse(val); } catch(e) { obj[headers[j]] = val; }
+        try { obj[key] = JSON.parse(val); } catch(e) { obj[key] = val; }
       } else {
-        obj[headers[j]] = val;
+        obj[key] = val;
       }
       if (val !== "") hasContent = true;
     }
