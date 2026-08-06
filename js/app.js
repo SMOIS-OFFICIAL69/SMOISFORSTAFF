@@ -668,6 +668,22 @@ document.addEventListener('DOMContentLoaded', () => {
       return matchSearch && matchCategory && matchStatus;
     });
 
+    // เรียงลำดับกิจกรรม: วันที่จัดกิจกรรมที่ใกล้ถึงขึ้นก่อน (กิจกรรมที่เสร็จสิ้นแล้วอยู่ด้านล่าง)
+    filtered.sort((a, b) => {
+      const aIsCompleted = a.status === 'completed' ? 1 : 0;
+      const bIsCompleted = b.status === 'completed' ? 1 : 0;
+      if (aIsCompleted !== bIsCompleted) {
+        return aIsCompleted - bIsCompleted;
+      }
+
+      const timeA = a.date ? new Date(a.date).getTime() : Infinity;
+      const timeB = b.date ? new Date(b.date).getTime() : Infinity;
+      const validA = isNaN(timeA) ? Infinity : timeA;
+      const validB = isNaN(timeB) ? Infinity : timeB;
+
+      return validA - validB;
+    });
+
     activitiesCountBadge.textContent = filtered.length;
     activitiesCardsGrid.innerHTML = '';
 
