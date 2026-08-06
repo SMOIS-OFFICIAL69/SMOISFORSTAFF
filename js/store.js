@@ -384,7 +384,7 @@ class Store {
         }
 
         // 3. Synchronize Remote Registrations (with Smart Merge to preserve recent local mutations)
-        if (Array.isArray(data.registrations)) {
+        if (Array.isArray(data.registrations) && data.registrations.length > 0) {
           let remoteRegs = data.registrations
             .filter(r => r && r.status !== 'cancelled')
             .map(r => ({
@@ -407,8 +407,10 @@ class Store {
           });
 
           const finalRegs = [...remoteRegs, ...pendingLocal];
-          localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(finalRegs));
-          if (finalRegs.length > 0) hasRemoteData = true;
+          if (finalRegs.length > 0) {
+            localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(finalRegs));
+            hasRemoteData = true;
+          }
         }
 
         // 4. Synchronize Remote Categories

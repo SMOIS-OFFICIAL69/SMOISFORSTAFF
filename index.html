@@ -1133,10 +1133,7 @@ function handleRequest(e, method) {
     }
 
     // 2. ACTION: GET ALL (อ่านข้อมูลทั้งหมด)
-    var registrations = readRegistrationsFromActivitySheets(ss);
-    if (!registrations || registrations.length === 0) {
-      registrations = readFromSheet(ss, "Registrations");
-    }
+    var registrations = readAllRegistrationsCombined(ss);
 
     var result = {
       status: "success",
@@ -1207,6 +1204,36 @@ function readRegistrationsFromActivitySheets(ss) {
   });
 
   return allRegs;
+}
+
+function readAllRegistrationsCombined(ss) {
+  var mainRegs = readFromSheet(ss, "Registrations");
+  var actRegs = readRegistrationsFromActivitySheets(ss);
+  var combinedMap = {};
+  
+  if (Array.isArray(mainRegs)) {
+    mainRegs.forEach(function(r) {
+      if (r && r.workerId && r.activityId) {
+        var key = String(r.workerId).trim() + "_" + String(r.activityId).trim();
+        combinedMap[key] = r;
+      }
+    });
+  }
+  
+  if (Array.isArray(actRegs)) {
+    actRegs.forEach(function(r) {
+      if (r && r.workerId && r.activityId) {
+        var key = String(r.workerId).trim() + "_" + String(r.activityId).trim();
+        combinedMap[key] = r;
+      }
+    });
+  }
+
+  var result = [];
+  Object.keys(combinedMap).forEach(function(k) {
+    result.push(combinedMap[k]);
+  });
+  return result;
 }
 
 function writeToSheet(ss, sheetName, items) {
