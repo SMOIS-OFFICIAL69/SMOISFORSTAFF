@@ -644,7 +644,12 @@ class Store {
 
   // --- Workers ---
   getWorkers() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.WORKERS)) || [];
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.WORKERS));
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_WORKERS;
+    } catch (e) {
+      return DEFAULT_WORKERS;
+    }
   }
 
   generateNextWorkerId() {
@@ -833,20 +838,36 @@ class Store {
 
   // --- Activities ---
   getActivities() {
-    const activities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES)) || [];
+    let activities = [];
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES));
+      activities = Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_ACTIVITIES;
+    } catch (e) {
+      activities = DEFAULT_ACTIVITIES;
+    }
     const registrations = this.getRegistrations();
 
     // Dynamically calculate current registered count for each activity
     return activities.map(act => {
-      const activeRegs = registrations.filter(r => 
-        String(r.activityId || '').trim().toLowerCase() === String(act.id || '').trim().toLowerCase() && 
+      if (!act) return null;
+      const activeRegs = registrations.filter(r =>
+        r && String(r.activityId || '').trim().toLowerCase() === String(act.id || '').trim().toLowerCase() &&
         r.status !== 'cancelled'
       );
       return {
         ...act,
         registeredCount: activeRegs.length
       };
-    });
+    }).filter(Boolean);
+  }
+
+  getRegistrations() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGISTRATIONS));
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
   }
 
   getActivityById(id) {

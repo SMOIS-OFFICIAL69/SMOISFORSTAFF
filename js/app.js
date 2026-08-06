@@ -615,40 +615,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4. VIEW 1: Activities Grid Renderer & Event Listeners
   // --------------------------------------------------------------------------
   function renderActivitiesGrid() {
-    const activitiesFilterBar = document.getElementById('activities-filter-bar');
-    const activitiesLockedContainer = document.getElementById('activities-locked-container');
-    const isWorkerAuth = store.isWorkerAuthenticated();
-    const isAdmin = store.getCurrentRole() === 'admin' && store.isAdminAuthenticated();
-
-    if (!isWorkerAuth && !isAdmin) {
-      if (activitiesFilterBar) activitiesFilterBar.style.display = 'none';
-      if (activitiesCardsGrid) activitiesCardsGrid.style.display = 'none';
-      if (activitiesLockedContainer) {
-        activitiesLockedContainer.style.display = 'block';
-        activitiesLockedContainer.innerHTML = `
-          <div class="hours-progress-card" style="text-align:center; padding:3.5rem 1.5rem; max-width:700px; margin: 2rem auto;">
-            <div style="font-size:3.5rem; margin-bottom:1rem;">🔒</div>
-            <h2 style="font-size:1.4rem; font-weight:600; margin-bottom:0.5rem; color:var(--text-main);">กรุณาเข้าสู่ระบบด้วยรหัสนักศึกษา</h2>
-            <p style="color:var(--text-muted); max-width:520px; margin:0 auto 1.5rem auto; line-height:1.6;">
-              ท่านต้องเข้าสู่ระบบด้วยรหัสนักศึกษาหรือรหัสผู้ปฏิบัติงานก่อน จึงจะสามารถเข้าถึงรายการกิจกรรมทั้งหมด ค้นหา กรองกิจกรรม และลงทะเบียนเข้าร่วมกิจกรรมได้
-            </p>
-            <button class="btn btn-primary trigger-worker-login-btn" style="font-size:1rem; padding:0.75rem 1.5rem;">🔑 เข้าสู่ระบบด้วยรหัสนักศึกษา</button>
-          </div>
-        `;
-        activitiesLockedContainer.querySelectorAll('.trigger-worker-login-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            document.getElementById('worker-student-id').value = '';
-            openModal('worker-login-modal');
-          });
-        });
-      }
-      return;
-    }
-
-    if (activitiesFilterBar) activitiesFilterBar.style.display = 'flex';
-    if (activitiesCardsGrid) activitiesCardsGrid.style.display = 'grid';
-    if (activitiesLockedContainer) activitiesLockedContainer.style.display = 'none';
-
     const currentUserId = store.getCurrentUserId();
     const activities = store.getActivities();
     const userRegs = store.getRegistrations().filter(r => r.workerId === currentUserId && r.status !== 'cancelled');
