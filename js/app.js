@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.quick-student-chip').forEach(chip => {
     chip.addEventListener('click', (e) => {
-      const id = e.target.getAttribute('data-id');
+      const id = (e.currentTarget || e.target.closest('[data-id]')).getAttribute('data-id');
       document.getElementById('worker-student-id').value = id;
     });
   });
@@ -596,9 +596,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderCurrentView() {
     const viewId = getActiveViewId();
 
-    if (viewId === 'view-activities') {
-      renderActivitiesGrid();
-    } else if (viewId === 'view-my-summary') {
+    renderActivitiesGrid();
+
+    if (viewId === 'view-my-summary') {
       renderMySummary();
     } else if (viewId === 'view-admin-dashboard') {
       renderAdminDashboard();
@@ -607,6 +607,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (viewId === 'view-admin-roster') {
       renderAdminRoster();
     }
+
+    refreshActiveModalsIfOpen();
   }
 
   // --------------------------------------------------------------------------
@@ -722,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        const actId = e.target.getAttribute('data-act-id');
+        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
         const currentUserId = store.getCurrentUserId();
         try {
           store.registerWorker(currentUserId, actId);
@@ -738,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cancel Registration Button
     document.querySelectorAll('.cancel-reg-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const actId = e.target.getAttribute('data-act-id');
+        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
         const currentUserId = store.getCurrentUserId();
         if (confirm('คุณต้องการยกเลิกการลงทะเบียนกิจกรรมนี้ใช่หรือไม่?')) {
           store.cancelRegistration(currentUserId, actId);
@@ -825,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Edit Activity Listener
     document.querySelectorAll('.admin-edit-act-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const actId = e.target.getAttribute('data-act-id');
+        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
         showActivityFormModal(actId);
       });
     });
@@ -833,7 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Delete Activity Listener
     document.querySelectorAll('.admin-delete-act-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const actId = e.target.getAttribute('data-act-id');
+        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
         if (confirm(`คุณต้องการลบกิจกรรมรหัส ${actId} ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`)) {
           store.deleteActivity(actId);
           ui.showToast('ลบกิจกรรมเรียบร้อยแล้ว', 'success');
@@ -846,7 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Manage Roster & Attendance Listener
     document.querySelectorAll('.admin-manage-roster-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const actId = e.target.getAttribute('data-act-id');
+        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
         showActivityRosterModal(actId);
       });
     });
@@ -936,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Manual Register Button Listener
     document.querySelectorAll('.admin-manual-register-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const workerId = e.target.getAttribute('data-worker-id');
+        const workerId = (e.currentTarget || e.target.closest('[data-worker-id]')).getAttribute('data-worker-id');
         showManualRegisterModal(workerId);
       });
     });
@@ -944,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Edit Worker Listener
     document.querySelectorAll('.admin-edit-worker-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const workerId = e.target.getAttribute('data-worker-id');
+        const workerId = (e.currentTarget || e.target.closest('[data-worker-id]')).getAttribute('data-worker-id');
         showEditWorkerModal(workerId);
       });
     });
@@ -952,7 +954,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Delete Worker Listener
     document.querySelectorAll('.admin-delete-worker-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const workerId = e.target.getAttribute('data-worker-id');
+        const workerId = (e.currentTarget || e.target.closest('[data-worker-id]')).getAttribute('data-worker-id');
         const worker = store.getWorkers().find(w => w.id.toUpperCase() === workerId.toUpperCase());
         const workerName = worker ? worker.name : workerId;
         if (confirm(`คุณต้องการลบรายชื่อผู้ปฏิบัติงาน "${workerName}" (${workerId}) ออกจากระบบใช่หรือไม่?`)) {
@@ -1600,7 +1602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Attach Attendance Event Listeners
       tbody.querySelectorAll('.approve-hours-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const regId = e.target.getAttribute('data-reg-id');
+          const regId = (e.currentTarget || e.target.closest('[data-reg-id]')).getAttribute('data-reg-id');
           const hoursInput = tbody.querySelector(`.roster-hours-input[data-reg-id="${regId}"]`);
           const hoursToGrant = parseFloat(hoursInput.value) || act.hours;
 
@@ -1613,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tbody.querySelectorAll('.mark-absent-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const regId = e.target.getAttribute('data-reg-id');
+          const regId = (e.currentTarget || e.target.closest('[data-reg-id]')).getAttribute('data-reg-id');
           store.updateAttendance(regId, 'absent', 0, 'ไม่ได้เข้าร่วมกิจกรรม');
           ui.showToast('บันทึกสถานะไม่ได้เข้าร่วมกิจกรรม', 'info');
           refreshHeaderProfile();
@@ -1964,7 +1966,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Attach Edit Listeners
     adminListTbody.querySelectorAll('.admin-edit-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const username = e.target.getAttribute('data-username');
+        const username = (e.currentTarget || e.target.closest('[data-username]')).getAttribute('data-username');
         const adminObj = store.getAdmins().find(a => a.username.toLowerCase() === username.toLowerCase());
         if (!adminObj) return;
 
@@ -1981,7 +1983,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Attach Delete Listeners
     adminListTbody.querySelectorAll('.admin-delete-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const username = e.target.getAttribute('data-username');
+        const username = (e.currentTarget || e.target.closest('[data-username]')).getAttribute('data-username');
         const adminObj = store.getAdmins().find(a => a.username.toLowerCase() === username.toLowerCase());
         const adminName = adminObj ? adminObj.name : username;
 
