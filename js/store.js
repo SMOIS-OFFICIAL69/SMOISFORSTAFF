@@ -354,8 +354,8 @@ class Store {
           return s;
         };
 
-        // 1. Synchronize Remote Workers
-        if (Array.isArray(data.workers)) {
+        // 1. Synchronize Remote Workers (Non-destructive merge)
+        if (Array.isArray(data.workers) && data.workers.length > 0) {
           let remoteWorkers = data.workers.map(w => ({
             ...w,
             nickname: w.nickname || w.nick || '-',
@@ -363,27 +363,47 @@ class Store {
             targetHours: parseInt(w.targetHours) || 30,
             avatar: parseGoogleDriveAvatarUrl(w.avatar)
           }));
-          if (remoteWorkers.length > 0) {
-            localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(remoteWorkers));
+          const localWorkers = this.getWorkers();
+          const workerMap = {};
+          localWorkers.forEach(w => { if (w && w.id) workerMap[String(w.id).toUpperCase()] = w; });
+          remoteWorkers.forEach(w => {
+            if (w && w.id) {
+              const k = String(w.id).toUpperCase();
+              workerMap[k] = { ...(workerMap[k] || {}), ...w };
+            }
+          });
+          const finalWorkers = Object.values(workerMap);
+          if (finalWorkers.length > 0) {
+            localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(finalWorkers));
             hasRemoteData = true;
           }
         }
 
-        // 2. Synchronize Remote Activities
-        if (Array.isArray(data.activities)) {
+        // 2. Synchronize Remote Activities (Non-destructive merge)
+        if (Array.isArray(data.activities) && data.activities.length > 0) {
           let remoteActivities = data.activities.map(a => ({
             ...a,
             date: parseRemoteDateString(a.date),
             hours: parseFloat(a.hours) || 0,
             maxCapacity: parseInt(a.maxCapacity) || 30
           }));
-          if (remoteActivities.length > 0) {
-            localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(remoteActivities));
+          const localActivities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES)) || [];
+          const actMap = {};
+          localActivities.forEach(a => { if (a && a.id) actMap[String(a.id).toUpperCase()] = a; });
+          remoteActivities.forEach(a => {
+            if (a && a.id) {
+              const k = String(a.id).toUpperCase();
+              actMap[k] = { ...(actMap[k] || {}), ...a };
+            }
+          });
+          const finalActivities = Object.values(actMap);
+          if (finalActivities.length > 0) {
+            localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(finalActivities));
             hasRemoteData = true;
           }
         }
 
-        // 3. Synchronize Remote Registrations (with Smart Merge to preserve recent local mutations)
+        // 3. Synchronize Remote Registrations (Non-destructive merge)
         if (Array.isArray(data.registrations) && data.registrations.length > 0) {
           let remoteRegs = data.registrations
             .filter(r => r && r.status !== 'cancelled')
@@ -396,17 +416,23 @@ class Store {
               hoursGranted: parseFloat(r.hoursGranted) || 0
             }));
 
-          // Smart Merge: Preserve recent local registrations not yet reflected in Google Sheets
           const localRegs = JSON.parse(localStorage.getItem(STORAGE_KEYS.REGISTRATIONS)) || [];
-          const remoteKeys = new Set(remoteRegs.map(r => `${String(r.workerId || '').trim()}_${String(r.activityId || '').trim()}`));
-          
-          const pendingLocal = localRegs.filter(l => {
-            if (!l || l.status === 'cancelled') return false;
-            const key = `${String(l.workerId || '').trim()}_${String(l.activityId || '').trim()}`;
-            return !remoteKeys.has(key);
+          const regMap = {};
+          localRegs.forEach(l => {
+            if (l && l.workerId && l.activityId && l.status !== 'cancelled') {
+              const k = `${String(l.workerId).trim().toUpperCase()}_${String(l.activityId).trim().toUpperCase()}`;
+              regMap[k] = l;
+            }
           });
 
-          const finalRegs = [...remoteRegs, ...pendingLocal];
+          remoteRegs.forEach(r => {
+            if (r && r.workerId && r.activityId) {
+              const k = `${String(r.workerId).trim().toUpperCase()}_${String(r.activityId).trim().toUpperCase()}`;
+              regMap[k] = { ...(regMap[k] || {}), ...r };
+            }
+          });
+
+          const finalRegs = Object.values(regMap);
           if (finalRegs.length > 0) {
             localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(finalRegs));
             hasRemoteData = true;

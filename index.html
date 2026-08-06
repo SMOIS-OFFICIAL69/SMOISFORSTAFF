@@ -1105,31 +1105,33 @@ function handleRequest(e, method) {
       } catch (pErr) {}
     }
 
-    // 1. ACTION: SYNC ALL (บันทึกข้อมูลทั้งหมดแบบความเร็วสูง)
+    // 1. ACTION: SYNC ALL (ผสานและบันทึกข้อมูลแบบป้องกันข้อมูลหาย 100%)
     if (action === "syncAll" && payloadData) {
       if (Array.isArray(payloadData.workers) && payloadData.workers.length > 0) {
-        writeToSheet(ss, "Workers", payloadData.workers);
+        upsertToSheet(ss, "Workers", payloadData.workers, "id");
       }
       if (Array.isArray(payloadData.activities) && payloadData.activities.length > 0) {
-        writeToSheet(ss, "Activities", payloadData.activities);
+        upsertToSheet(ss, "Activities", payloadData.activities, "id");
       }
       if (Array.isArray(payloadData.registrations)) {
-        writeToSheet(ss, "Registrations", payloadData.registrations);
+        upsertRegistrations(ss, payloadData.registrations);
       }
       if (Array.isArray(payloadData.categories) && payloadData.categories.length > 0) {
-        writeToSheet(ss, "Categories", payloadData.categories);
+        upsertCategories(ss, payloadData.categories);
       }
       if (Array.isArray(payloadData.admins) && payloadData.admins.length > 0) {
-        writeToSheet(ss, "Admins", payloadData.admins);
+        upsertToSheet(ss, "Admins", payloadData.admins, "username");
       }
 
-      if (Array.isArray(payloadData.activities) && payloadData.activities.length > 0) {
-        syncIndividualActivitySheets(ss, payloadData.activities, payloadData.registrations);
+      var currentActivities = readFromSheet(ss, "Activities");
+      var currentRegistrations = readFromSheet(ss, "Registrations");
+      if (currentActivities.length > 0) {
+        syncIndividualActivitySheets(ss, currentActivities, currentRegistrations);
       }
 
       SpreadsheetApp.flush(); // บันทึกข้อมูลลงชีททันทีไม่ต้องรอ
       saveBackupToGoogleDrive(payloadData); // สำรองข้อมูล JSON ลง Google Drive อัตโนมัติ
-      return jsonResponse({ status: "success", message: "บันทึกข้อมูลเรียบร้อยแล้ว" });
+      return jsonResponse({ status: "success", message: "ผสานและบันทึกข้อมูลเรียบร้อยแล้ว" });
     }
 
     // 2. ACTION: GET ALL (อ่านข้อมูลทั้งหมด)
@@ -1234,6 +1236,83 @@ function readAllRegistrationsCombined(ss) {
     result.push(combinedMap[k]);
   });
   return result;
+}
+
+function upsertToSheet(ss, sheetName, incomingItems, keyField) {
+  if (!incomingItems || !Array.isArray(incomingItems) || incomingItems.length === 0) return;
+  var existing = readFromSheet(ss, sheetName);
+  var mergedMap = {};
+
+  existing.forEach(function(item) {
+    if (item && item[keyField] !== undefined && item[keyField] !== null) {
+      var k = String(item[keyField]).trim().toLowerCase();
+      if (k) mergedMap[k] = item;
+    }
+  });
+
+  incomingItems.forEach(function(item) {
+    if (item && item[keyField] !== undefined && item[keyField] !== null) {
+      var k = String(item[keyField]).trim().toLowerCase();
+      if (k) {
+        if (mergedMap[k]) {
+          mergedMap[k] = Object.assign({}, mergedMap[k], item);
+        } else {
+          mergedMap[k] = item;
+        }
+      }
+    }
+  });
+
+  var finalItems = [];
+  Object.keys(mergedMap).forEach(function(k) { finalItems.push(mergedMap[k]); });
+  writeToSheet(ss, sheetName, finalItems);
+}
+
+function upsertRegistrations(ss, incomingRegs) {
+  if (!Array.isArray(incomingRegs)) return;
+  var existing = readFromSheet(ss, "Registrations");
+  var mergedMap = {};
+
+  existing.forEach(function(r) {
+    if (r && r.workerId && r.activityId) {
+      var k = String(r.workerId).trim().toLowerCase() + "_" + String(r.activityId).trim().toLowerCase();
+      mergedMap[k] = r;
+    }
+  });
+
+  incomingRegs.forEach(function(r) {
+    if (r && r.workerId && r.activityId) {
+      var k = String(r.workerId).trim().toLowerCase() + "_" + String(r.activityId).trim().toLowerCase();
+      if (mergedMap[k]) {
+        mergedMap[k] = Object.assign({}, mergedMap[k], r);
+      } else {
+        mergedMap[k] = r;
+      }
+    }
+  });
+
+  var finalItems = [];
+  Object.keys(mergedMap).forEach(function(k) { finalItems.push(mergedMap[k]); });
+  writeToSheet(ss, "Registrations", finalItems);
+}
+
+function upsertCategories(ss, incomingCats) {
+  if (!Array.isArray(incomingCats)) return;
+  var existing = readFromSheet(ss, "Categories");
+  var catSet = {};
+
+  existing.forEach(function(c) {
+    var str = String(c || "").trim();
+    if (str) catSet[str] = true;
+  });
+
+  incomingCats.forEach(function(c) {
+    var str = String(c || "").trim();
+    if (str) catSet[str] = true;
+  });
+
+  var finalCats = Object.keys(catSet);
+  writeToSheet(ss, "Categories", finalCats);
 }
 
 function writeToSheet(ss, sheetName, items) {
