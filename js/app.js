@@ -236,22 +236,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  async function initApp() {
+  function initApp() {
     initTheme();
     populateCategoryDropdowns();
+    populateUserDropdown();
     syncRoleUI();
     refreshHeaderProfile();
     renderCurrentView();
     setupRealtimeListeners();
 
-    // Fetch latest cloud data immediately on page open and force instant re-render
-    _hasInitialFetched = false;
-    await triggerSharedDataSync();
-    _hasInitialFetched = true;
-    populateCategoryDropdowns();
-    populateUserDropdown();
-    refreshHeaderProfile();
-    renderCurrentView();
+    // Render local cache instantly (0ms) and perform silent background sync from Google Sheets
+    triggerSharedDataSync().then(() => {
+      populateCategoryDropdowns();
+      populateUserDropdown();
+      refreshHeaderProfile();
+      renderCurrentView();
+    }).catch(err => {
+      console.warn('Background sync notice:', err);
+    });
+
     startAutoPolling();
   }
 
@@ -723,6 +726,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Register Button
     document.querySelectorAll('.register-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         if (!store.isWorkerAuthenticated()) {
           ui.showToast('กรุณาเข้าสู่ระบบด้วยรหัสนักศึกษาก่อนลงทะเบียนกิจกรรม', 'info');
           document.getElementById('worker-student-id').value = '';
@@ -730,7 +735,10 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
+        const targetEl = e.currentTarget || e.target.closest('[data-act-id]');
+        const actId = targetEl ? targetEl.getAttribute('data-act-id') : null;
+        if (!actId) return;
+
         const currentUserId = store.getCurrentUserId();
         try {
           store.registerWorker(currentUserId, actId);
@@ -746,7 +754,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cancel Registration Button
     document.querySelectorAll('.cancel-reg-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
+        e.stopPropagation();
+        e.preventDefault();
+        const targetEl = e.currentTarget || e.target.closest('[data-act-id]');
+        const actId = targetEl ? targetEl.getAttribute('data-act-id') : null;
+        if (!actId) return;
+
         const currentUserId = store.getCurrentUserId();
         if (confirm('คุณต้องการยกเลิกการลงทะเบียนกิจกรรมนี้ใช่หรือไม่?')) {
           store.cancelRegistration(currentUserId, actId);
@@ -760,6 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // View Details Button, Card Title, or Card Banner
     document.querySelectorAll('.view-details-btn, .card-title, .card-banner').forEach(el => {
       el.addEventListener('click', (e) => {
+        e.stopPropagation();
         const actId = el.getAttribute('data-act-id');
         if (actId) {
           showActivityDetailsModal(actId);
@@ -1287,7 +1301,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Detail Register Button
     const detailRegBtn = detailsBody.querySelector('.detail-register-btn');
     if (detailRegBtn) {
-      detailRegBtn.addEventListener('click', () => {
+      detailRegBtn.addEventListener('click', (e) => {
+        if (e) { e.stopPropagation(); e.preventDefault(); }
         if (!store.isWorkerAuthenticated()) {
           ui.showToast('กรุณาเข้าสู่ระบบด้วยรหัสนักศึกษาก่อนลงทะเบียนกิจกรรม', 'info');
           closeModal('activity-details-modal');
@@ -1309,7 +1324,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Detail Cancel Button
     const detailCancelBtn = detailsBody.querySelector('.detail-cancel-reg-btn');
     if (detailCancelBtn) {
-      detailCancelBtn.addEventListener('click', () => {
+      detailCancelBtn.addEventListener('click', (e) => {
+        if (e) { e.stopPropagation(); e.preventDefault(); }
         if (confirm('คุณต้องการยกเลิกการลงทะเบียนกิจกรรมนี้ใช่หรือไม่?')) {
           store.cancelRegistration(currentUserId, act.id);
           ui.showToast('ยกเลิกการลงทะเบียนเรียบร้อยแล้ว', 'info');
