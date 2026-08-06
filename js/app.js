@@ -1,2158 +1,2148 @@
-/* ==========================================================================
-   Smo-Staff: Main Application Controller
-   Event listeners, state synchronization, view navigation, modal handling & CSV export
-   ========================================================================== */
+/**
+ * Smo-Staff Activity Registration App Logic
+ * Complete Implementation with Full Interactivity, Edit/Delete Modals, and AUTOMATED GOOGLE DRIVE BACKUP TIMERS & EVENT TRIGGERS
+ */
 
-document.addEventListener('DOMContentLoaded', () => {
-  const store = window.appStore;
-  const ui = window.UI;
+document.addEventListener('DOMContentLoaded', async () => {
+  // Navigation & Role Elements
+  const clockText = document.getElementById('clockText');
+  const roleStaffBtn = document.getElementById('roleStaffBtn');
+  const roleAdminBtn = document.getElementById('roleAdminBtn');
+  const staffViewSection = document.getElementById('staffViewSection');
+  const adminViewSection = document.getElementById('adminViewSection');
 
-  // DOM Elements
-  const roleWorkerBtn = document.getElementById('role-worker-btn');
-  const roleAdminBtn = document.getElementById('role-admin-btn');
-  const userSelectDropdown = document.getElementById('user-select-dropdown');
-  const themeToggleBtn = document.getElementById('theme-toggle-btn');
-  const resetDataBtn = document.getElementById('reset-data-btn');
+  const navUserName = document.getElementById('navUserName');
+  const navUserCode = document.getElementById('navUserCode');
+  const navUserAvatar = document.getElementById('navUserAvatar');
+  const logoutBtn = document.getElementById('logoutBtn');
 
-  // Header Elements
-  const headerUserAvatar = document.getElementById('header-user-avatar');
-  const navUserAvatar = document.getElementById('nav-user-avatar');
-  const headerUserName = document.getElementById('header-user-name');
-  const headerUserId = document.getElementById('header-user-id');
-  const headerUserDept = document.getElementById('header-user-dept');
-  const headerUserPos = document.getElementById('header-user-pos');
-  const headerStatHours = document.getElementById('header-stat-hours');
-  const headerStatTarget = document.getElementById('header-stat-target');
-  const headerStatPending = document.getElementById('header-stat-pending');
-  const tabMyRegsCount = document.getElementById('tab-my-regs-count');
+  // Staff Hero Elements
+  const staffHeroAvatarBox = document.getElementById('staffHeroAvatarBox');
+  const staffFullName = document.getElementById('staffFullName');
+  const staffCodeTag = document.getElementById('staffCodeTag');
+  const staffMajor = document.getElementById('staffMajor');
+  const staffYear = document.getElementById('staffYear');
+  const staffDept = document.getElementById('staffDept');
+  const staffPos = document.getElementById('staffPos');
+  const accumulatedHours = document.getElementById('accumulatedHours');
+  const targetHoursText = document.getElementById('targetHoursText');
+  const pendingHours = document.getElementById('pendingHours');
 
-  // Click on user avatars to preview full resolution
-  if (headerUserAvatar) {
-    headerUserAvatar.style.cursor = 'pointer';
-    headerUserAvatar.title = 'คลิกเพื่อดูรูปโปรไฟล์ขยายเต็ม';
-    headerUserAvatar.addEventListener('click', () => {
-      const src = headerUserAvatar.src;
-      const name = headerUserName ? headerUserName.textContent : '';
-      if (src) openImageViewer(src, `รูปโปรไฟล์: ${name}`);
+  // Admin Hero Elements
+  const adminHeroAvatarBox = document.getElementById('adminHeroAvatarBox');
+  const adminFullName = document.getElementById('adminFullName');
+  const adminPosition = document.getElementById('adminPosition');
+  const adminTotalActCount = document.getElementById('adminTotalActCount');
+  const adminTotalStaffCount = document.getElementById('adminTotalStaffCount');
+  const adminTotalRegCount = document.getElementById('adminTotalRegCount');
+  const adminTotalPendingHrs = document.getElementById('adminTotalPendingHrs');
+  const adminTotalApprovedHrs = document.getElementById('adminTotalApprovedHrs');
+
+  // All 5 Clickable Overview Stat Cards
+  const clickActivitiesCard = document.getElementById('clickActivitiesCard');
+  const clickStaffListCard = document.getElementById('clickStaffListCard');
+  const clickRegistrationsCard = document.getElementById('clickRegistrationsCard');
+  const clickPendingHoursCard = document.getElementById('clickPendingHoursCard');
+  const clickApprovedHoursCard = document.getElementById('clickApprovedHoursCard');
+
+  // Subnav Tabs
+  const tabAllActivities = document.getElementById('tabAllActivities');
+  const tabMySummary = document.getElementById('tabMySummary');
+  const subviewAllActivities = document.getElementById('subviewAllActivities');
+  const subviewMySummary = document.getElementById('subviewMySummary');
+  const myRegCountBadge = document.getElementById('myRegCountBadge');
+
+  // Summary Elements
+  const summaryEarnedHours = document.getElementById('summaryEarnedHours');
+  const summaryPendingHours = document.getElementById('summaryPendingHours');
+  const summaryRegisteredCount = document.getElementById('summaryRegisteredCount');
+  const meterPercentText = document.getElementById('meterPercentText');
+  const meterFillBar = document.getElementById('meterFillBar');
+  const meterEarnedText = document.getElementById('meterEarnedText');
+  const meterRemainingText = document.getElementById('meterRemainingText');
+  const historyUserSubtitle = document.getElementById('historyUserSubtitle');
+  const historyTableBody = document.getElementById('historyTableBody');
+
+  // Search & Filter
+  const searchInput = document.getElementById('searchInput');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  const activitiesCountNum = document.getElementById('activitiesCountNum');
+  const activitiesGrid = document.getElementById('activitiesGrid');
+
+  // Modals
+  const staffLoginModal = document.getElementById('staffLoginModal');
+  const closeStaffLoginModalBtn = document.getElementById('closeStaffLoginModalBtn');
+  const staffLoginForm = document.getElementById('staffLoginForm');
+  const loginStudentId = document.getElementById('loginStudentId');
+
+  const adminLoginModal = document.getElementById('adminLoginModal');
+  const closeAdminLoginModalBtn = document.getElementById('closeAdminLoginModalBtn');
+  const adminLoginForm = document.getElementById('adminLoginForm');
+  const adminUsernameInput = document.getElementById('adminUsernameInput');
+  const adminPasswordInput = document.getElementById('adminPasswordInput');
+
+  const registrationModal = document.getElementById('registrationModal');
+  const closeRegModalBtn = document.getElementById('closeRegModalBtn');
+  const modalActTitle = document.getElementById('modalActTitle');
+  const modalActId = document.getElementById('modalActId');
+  const staffIdInput = document.getElementById('staffIdInput');
+  const staffNameInput = document.getElementById('staffNameInput');
+  const deptInput = document.getElementById('deptInput');
+  const regForm = document.getElementById('regForm');
+
+  const addActivityModal = document.getElementById('addActivityModal');
+  const closeAddActModalBtn = document.getElementById('closeAddActModalBtn');
+  const addActivityForm = document.getElementById('addActivityForm');
+  const newActBanner = document.getElementById('newActBanner');
+  const actBannerPreviewBox = document.getElementById('actBannerPreviewBox');
+  const actBannerImgPreview = document.getElementById('actBannerImgPreview');
+
+  const editActivityModal = document.getElementById('editActivityModal');
+  const closeEditActModalBtn = document.getElementById('closeEditActModalBtn');
+  const editActivityForm = document.getElementById('editActivityForm');
+
+  const addStaffModal = document.getElementById('addStaffModal');
+  const closeAddStaffModalBtn = document.getElementById('closeAddStaffModalBtn');
+  const addStaffForm = document.getElementById('addStaffForm');
+  const newStaffAvatar = document.getElementById('newStaffAvatar');
+  const staffAvatarPreviewBox = document.getElementById('staffAvatarPreviewBox');
+  const staffAvatarImgPreview = document.getElementById('staffAvatarImgPreview');
+
+  const editStaffModal = document.getElementById('editStaffModal');
+  const closeEditStaffModalBtn = document.getElementById('closeEditStaffModalBtn');
+  const editStaffForm = document.getElementById('editStaffForm');
+
+  const addAdminModal = document.getElementById('addAdminModal');
+  const closeAddAdminModalBtn = document.getElementById('closeAddAdminModalBtn');
+  const addAdminForm = document.getElementById('addAdminForm');
+  const newAdminAvatar = document.getElementById('newAdminAvatar');
+  const adminAvatarPreviewBox = document.getElementById('adminAvatarPreviewBox');
+  const adminAvatarImgPreview = document.getElementById('adminAvatarImgPreview');
+
+  const adminListModal = document.getElementById('adminListModal');
+  const closeAdminListModalBtn = document.getElementById('closeAdminListModalBtn');
+  const adminListTableBody = document.getElementById('adminListTableBody');
+
+  const staffListModal = document.getElementById('staffListModal');
+  const closeStaffListModalBtn = document.getElementById('closeStaffListModalBtn');
+  const staffListTableBody = document.getElementById('staffListTableBody');
+
+  const activitiesListModal = document.getElementById('activitiesListModal');
+  const closeActivitiesListModalBtn = document.getElementById('closeActivitiesListModalBtn');
+  const activitiesListTableBody = document.getElementById('activitiesListTableBody');
+
+  const registrationsListModal = document.getElementById('registrationsListModal');
+  const closeRegsListModalBtn = document.getElementById('closeRegsListModalBtn');
+  const regsListTableBody = document.getElementById('regsListTableBody');
+
+  const approvedHoursModal = document.getElementById('approvedHoursModal');
+  const closeApprovedHoursModalBtn = document.getElementById('closeApprovedHoursModalBtn');
+  const approvedHoursTableBody = document.getElementById('approvedHoursTableBody');
+
+  const gasSettingsModal = document.getElementById('gasSettingsModal');
+  const closeGasModalBtn = document.getElementById('closeGasModalBtn');
+  const gasUrlInput = document.getElementById('gasUrlInput');
+  const saveGasUrlBtn = document.getElementById('saveGasUrlBtn');
+
+  // Quick Admin Action Cards
+  const quickAddActBtn = document.getElementById('quickAddActBtn');
+  const quickAddStaffBtn = document.getElementById('quickAddStaffBtn');
+  const quickAddAdminBtn = document.getElementById('quickAddAdminBtn');
+  const quickListAdminBtn = document.getElementById('quickListAdminBtn');
+  const quickConnectGasBtn = document.getElementById('quickConnectGasBtn');
+  const quickExportCsvBtn = document.getElementById('quickExportCsvBtn');
+
+  const triggerDriveBackupBtn = document.getElementById('triggerDriveBackupBtn');
+  const adminTableBody = document.getElementById('adminTableBody');
+  const backupTableBody = document.getElementById('backupTableBody');
+
+  let currentActivities = [];
+  let currentRegistrations = [];
+
+  // --- AUTOMATED DRIVE BACKUP SCHEDULER & EVENT TRIGGER ---
+  async function autoDriveBackup(triggerSource = 'auto_event') {
+    try {
+      console.log(`[Auto-Backup] Triggered by ${triggerSource}`);
+      const res = await api.triggerDriveBackup();
+      if (res && res.success) {
+        showToast(`🔄 สำรองข้อมูลอัตโนมัติสำเร็จ (${res.fileName})`, 'success');
+        if (currentRole === 'admin') renderAdminTables();
+      }
+    } catch (err) { console.warn('Auto backup background error:', err); }
+  }
+
+  // Schedule Background Cron Backup Every 15 Minutes
+  setInterval(() => {
+    autoDriveBackup('scheduled_cron_15m');
+  }, 15 * 60 * 1000);
+
+  // --- LIVE DRIVE IMAGE PREVIEW LISTENERS ---
+  if (newActBanner) {
+    newActBanner.addEventListener('input', () => {
+      const directUrl = convertDriveUrlToDirectLink(newActBanner.value);
+      if (directUrl) {
+        actBannerImgPreview.src = directUrl;
+        actBannerPreviewBox.style.display = 'block';
+      } else {
+        actBannerPreviewBox.style.display = 'none';
+      }
     });
   }
-  if (navUserAvatar) {
-    navUserAvatar.style.cursor = 'pointer';
-    navUserAvatar.title = 'คลิกเพื่อดูรูปโปรไฟล์ขยายเต็ม';
-    navUserAvatar.addEventListener('click', () => {
-      const src = navUserAvatar.src;
-      const name = headerUserName ? headerUserName.textContent : '';
-      if (src) openImageViewer(src, `รูปโปรไฟล์: ${name}`);
+
+  if (newStaffAvatar) {
+    newStaffAvatar.addEventListener('input', () => {
+      const directUrl = convertDriveUrlToDirectLink(newStaffAvatar.value);
+      if (directUrl) {
+        staffAvatarImgPreview.src = directUrl;
+        staffAvatarPreviewBox.style.display = 'block';
+      } else {
+        staffAvatarPreviewBox.style.display = 'none';
+      }
     });
   }
 
-  // Delegated click listener for previewable avatars and images
-  document.addEventListener('click', (e) => {
-    const avatarEl = e.target.closest('.previewable-avatar');
-    if (avatarEl) {
-      const imgSrc = avatarEl.getAttribute('data-img-src') || avatarEl.src;
-      const caption = avatarEl.getAttribute('data-img-caption') || avatarEl.alt || '';
-      if (imgSrc) openImageViewer(imgSrc, caption);
-    }
-  });
+  if (newAdminAvatar) {
+    newAdminAvatar.addEventListener('input', () => {
+      const directUrl = convertDriveUrlToDirectLink(newAdminAvatar.value);
+      if (directUrl) {
+        adminAvatarImgPreview.src = directUrl;
+        adminAvatarPreviewBox.style.display = 'block';
+      } else {
+        adminAvatarPreviewBox.style.display = 'none';
+      }
+    });
+  }
 
-  // Navigation & Filter Elements
-  const tabButtons = document.querySelectorAll('.tab-btn');
-  const viewSections = document.querySelectorAll('.view-section');
-  const searchInput = document.getElementById('search-activity-input');
-  const filterCategory = document.getElementById('filter-category-select');
-  const filterStatus = document.getElementById('filter-status-select');
-  const activitiesCountBadge = document.getElementById('activities-count-badge');
-  const activitiesCardsGrid = document.getElementById('activities-cards-grid');
-
-  // Admin View Elements
-  const adminStatTotalAct = document.getElementById('admin-stat-total-act');
-  const adminStatTotalWorkers = document.getElementById('admin-stat-total-workers');
-  const adminStatTotalRegs = document.getElementById('admin-stat-total-regs');
-  const adminStatTotalHours = document.getElementById('admin-stat-total-hours');
-  const adminActivitiesTableBody = document.getElementById('admin-activities-table-body');
-  const adminRosterTableBody = document.getElementById('admin-roster-table-body');
-
-  // --------------------------------------------------------------------------
-  // 1. App Initialization & Profile Sync
-  // --------------------------------------------------------------------------
-  let autoFetchTimer = null;
-  let _hasInitialFetched = false;
-
-  function updateLiveSyncBadge(status = 'synced') {
-    const badges = document.querySelectorAll('.live-sync-badge');
+  // Realtime Clock
+  function updateClock() {
     const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const hrs = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    const secs = String(now.getSeconds()).padStart(2, '0');
+    if (clockText) clockText.textContent = `${hrs}:${mins}:${secs}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
 
-    badges.forEach(badge => {
-      if (status === 'syncing') {
-        badge.innerHTML = `<span class="live-sync-dot" style="background:#eab308; animation:none;"></span> ⚡ กำลังซิงค์...`;
-      } else {
-        badge.innerHTML = `<span class="live-sync-dot"></span> เรียลไทม์ (${timeStr})`;
-      }
+  // --- THEME TOGGLE BUTTON (DARK MODE) ---
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-theme');
+      const isDark = document.body.classList.contains('dark-theme');
+      themeToggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-sun" style="color:#f59e0b;"></i>' : '<i class="fa-solid fa-moon"></i>';
+      showToast(isDark ? 'สลับเป็นธีมมืด (Dark Mode)' : 'สลับเป็นธีมสว่าง (Light Mode)', 'info');
     });
   }
 
-  function refreshActiveModalsIfOpen() {
-    try {
-      const rosterModal = document.getElementById('activity-roster-modal');
-      if (rosterModal && rosterModal.classList.contains('open') && window._activeRosterActivityId) {
-        showActivityRosterModal(window._activeRosterActivityId);
-      }
-      const detailsModal = document.getElementById('activity-details-modal');
-      if (detailsModal && detailsModal.classList.contains('open') && window._activeDetailsActivityId) {
-        showActivityDetailsModal(window._activeDetailsActivityId);
-      }
-    } catch (err) {
-      console.warn('Refresh open modals warning:', err);
-    }
-  }
-
-  async function triggerSharedDataSync() {
-    if (store.getGoogleSheetUrl()) {
-      try {
-        const res = await store.fetchFromGoogleSheets();
-        if (res && res.success && !res.skipped) {
-          updateLiveSyncBadge('synced');
-          populateCategoryDropdowns();
-          populateUserDropdown();
-          refreshHeaderProfile();
-          renderCurrentView();
-          refreshActiveModalsIfOpen();
-          _hasInitialFetched = true;
-        }
-      } catch (e) {
-        console.warn('Auto fetch on interval warning:', e);
-      }
-    }
-  }
-
-  function handleIncomingRealtimeSignal(data) {
-    if (!data || data.type !== 'DATA_UPDATED') return;
-
-    if (data.snapshot && data.source !== 'cloud') {
-      try {
-        const prevFingerprint = store.getDataFingerprint();
-        const STORAGE_KEYS = {
-          WORKERS: 'smo_staff_workers',
-          ACTIVITIES: 'smo_staff_activities',
-          REGISTRATIONS: 'smo_staff_registrations',
-          CATEGORIES: 'smo_staff_categories',
-          ADMINS: 'smo_staff_admins'
-        };
-
-        if (Array.isArray(data.snapshot.workers)) {
-          localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(data.snapshot.workers));
-        }
-        if (Array.isArray(data.snapshot.activities)) {
-          localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(data.snapshot.activities));
-        }
-        if (Array.isArray(data.snapshot.registrations)) {
-          localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(data.snapshot.registrations));
-        }
-        if (Array.isArray(data.snapshot.categories)) {
-          localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(data.snapshot.categories));
-        }
-        if (Array.isArray(data.snapshot.admins)) {
-          localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(data.snapshot.admins));
-        }
-
-        const newFingerprint = store.getDataFingerprint();
-        if (prevFingerprint !== newFingerprint) {
-          populateCategoryDropdowns();
-          refreshHeaderProfile();
-          renderCurrentView();
-          refreshActiveModalsIfOpen();
-          updateLiveSyncBadge('synced');
-        }
-      } catch (err) {
-        console.warn('Apply realtime snapshot warning:', err);
-      }
-    } else {
-      triggerSharedDataSync();
-    }
-  }
-
-  function startAutoPolling() {
-    if (autoFetchTimer) clearInterval(autoFetchTimer);
-    triggerSharedDataSync();
-    // High-speed heartbeat poll every 1.0 second for instant real-time sync across all devices
-    autoFetchTimer = setInterval(triggerSharedDataSync, 1000);
-  }
-
-  function setupRealtimeListeners() {
-    // 1. Custom internal event for same-page state mutations
-    window.addEventListener('smo-data-updated', (e) => {
-      populateCategoryDropdowns();
-      refreshHeaderProfile();
-      renderCurrentView();
-      refreshActiveModalsIfOpen();
-      updateLiveSyncBadge('synced');
-    });
-
-    // 2. Realtime WebSocket signal event for cross-device instant sync
-    window.addEventListener('smo-realtime-signal', (e) => {
-      handleIncomingRealtimeSignal(e.detail);
-    });
-
-    // 3. BroadcastChannel for instant cross-tab sync in the same browser
-    if ('BroadcastChannel' in window) {
-      try {
-        const channel = new BroadcastChannel('smo_staff_sync_channel');
-        channel.onmessage = (event) => {
-          handleIncomingRealtimeSignal(event.data);
-        };
-      } catch (e) {
-        console.warn('BroadcastChannel error:', e);
-      }
-    }
-
-    // 4. Storage event fallback for older browsers
-    window.addEventListener('storage', (e) => {
-      if (e.key && e.key.startsWith('smo_staff_')) {
-        populateCategoryDropdowns();
-        refreshHeaderProfile();
-        renderCurrentView();
-        refreshActiveModalsIfOpen();
-        updateLiveSyncBadge('synced');
-      }
-    });
-
-    // 4. Instant sync on tab visibility change (e.g. unlocking mobile screen or switching tabs)
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        triggerSharedDataSync();
-      }
-    });
-
-    // 5. Instant sync on window focus (e.g. clicking into the app window)
-    window.addEventListener('focus', () => {
-      triggerSharedDataSync();
-    });
-
-    // 6. Instant sync on network reconnect
-    window.addEventListener('online', () => {
-      triggerSharedDataSync();
+  // --- PASSWORD VISIBILITY TOGGLE EYE BUTTON ---
+  const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+  if (togglePasswordBtn && adminPasswordInput) {
+    togglePasswordBtn.addEventListener('click', () => {
+      const type = adminPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      adminPasswordInput.setAttribute('type', type);
+      togglePasswordBtn.innerHTML = type === 'password' ? '<i class="fa-regular fa-eye"></i>' : '<i class="fa-regular fa-eye-slash"></i>';
     });
   }
 
-  function initApp() {
-    initTheme();
-    populateCategoryDropdowns();
-    populateUserDropdown();
-    syncRoleUI();
-    refreshHeaderProfile();
-    renderCurrentView();
-    setupRealtimeListeners();
+  // Active Role Management
+  let currentRole = 'staff';
 
-    // Render local cache instantly (0ms) and perform silent background sync from Google Sheets
-    triggerSharedDataSync().then(() => {
-      populateCategoryDropdowns();
-      populateUserDropdown();
-      refreshHeaderProfile();
-      renderCurrentView();
-    }).catch(err => {
-      console.warn('Background sync notice:', err);
-    });
-
-    startAutoPolling();
-  }
-
-  function populateCategoryDropdowns(selectedCategory = null) {
-    const categories = store.getCategories();
-    const filterCategorySelect = document.getElementById('filter-category-select');
-    const actFormCategorySelect = document.getElementById('act-form-category');
-
-    if (filterCategorySelect) {
-      const currentFilterVal = filterCategorySelect.value || 'all';
-      const existingOptions = Array.from(filterCategorySelect.options).map(o => o.value);
-      const expectedOptions = ['all', ...categories];
-
-      const isMatch = existingOptions.length === expectedOptions.length &&
-        existingOptions.every((val, idx) => val === expectedOptions[idx]);
-
-      if (!isMatch) {
-        filterCategorySelect.innerHTML = `<option value="all">หมวดหมู่ทั้งหมด</option>` +
-          categories.map(c => `<option value="${c}">${c}</option>`).join('');
-      }
-
-      if (expectedOptions.includes(currentFilterVal)) {
-        filterCategorySelect.value = currentFilterVal;
-      } else {
-        filterCategorySelect.value = 'all';
-      }
-    }
-
-    if (actFormCategorySelect) {
-      const currentFormVal = selectedCategory || actFormCategorySelect.value;
-      const existingFormOpts = Array.from(actFormCategorySelect.options).map(o => o.value);
-      const expectedFormOpts = [...categories, '__NEW__'];
-
-      const isFormMatch = existingFormOpts.length === expectedFormOpts.length &&
-        existingFormOpts.every((val, idx) => val === expectedFormOpts[idx]);
-
-      if (!isFormMatch) {
-        actFormCategorySelect.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('') +
-          `<option value="__NEW__">➕ เพิ่มหมวดหมู่ใหม่...</option>`;
-      }
-
-      if (currentFormVal && expectedFormOpts.includes(currentFormVal)) {
-        actFormCategorySelect.value = currentFormVal;
-      }
-    }
-  }
-
-  function populateUserDropdown() {
-    const userSelectDropdown = document.getElementById('user-select-dropdown');
-    if (!userSelectDropdown) return;
-
-    const workers = store.getWorkers();
-    const currentVal = userSelectDropdown.value;
-
-    userSelectDropdown.innerHTML = `<option value="">-- เลือกผู้ปฏิบัติงาน --</option>` +
-      workers.map(w => `<option value="${w.id}">${w.name} (${w.id})</option>`).join('');
-
-    if (currentVal && workers.some(w => w.id === currentVal)) {
-      userSelectDropdown.value = currentVal;
-    }
-  }
-
-  // Dynamic Category Handler
-  const addNewCatBtn = document.getElementById('add-new-category-btn');
-  const actFormCategorySelect = document.getElementById('act-form-category');
-
-  function promptAndAddCategory() {
-    const newCatName = prompt('กรุณากรอกชื่อหมวดหมู่กิจกรรมใหม่ที่ต้องการเพิ่ม:');
-    if (newCatName && newCatName.trim()) {
-      const added = store.addCategory(newCatName.trim());
-      populateCategoryDropdowns(added);
-      ui.showToast(`เพิ่มหมวดหมู่ใหม่ "${added}" เรียบร้อยแล้ว`, 'success');
-      renderCurrentView();
-    }
-  }
-
-  if (addNewCatBtn) {
-    addNewCatBtn.addEventListener('click', promptAndAddCategory);
-  }
-
-  if (actFormCategorySelect) {
-    actFormCategorySelect.addEventListener('change', (e) => {
-      if (e.target.value === '__NEW__') {
-        promptAndAddCategory();
-      }
-    });
-  }
-
-  function initTheme() {
-    const savedTheme = localStorage.getItem('smo_staff_theme_v1') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    themeToggleBtn.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
-  }
-
-  themeToggleBtn.addEventListener('click', () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('smo_staff_theme_v1', newTheme);
-    themeToggleBtn.innerHTML = newTheme === 'dark' ? '☀️' : '🌙';
-  });
-
-  const workerLoginBtn = document.getElementById('worker-login-btn');
-  const workerSessionInfo = document.getElementById('worker-session-info');
-  const navUserNameDisplay = document.getElementById('nav-user-name-display');
-  const workerLogoutBtn = document.getElementById('worker-logout-btn');
-  const workerLoginForm = document.getElementById('worker-login-form');
-  const profileBannerLoggedOut = document.getElementById('profile-banner-logged-out');
-  const profileBannerLoggedIn = document.getElementById('profile-banner-logged-in');
-
-  function refreshHeaderProfile() {
-    const isWorkerAuth = store.isWorkerAuthenticated();
-    const isAdmin = store.getCurrentRole() === 'admin' && store.isAdminAuthenticated();
-    const user = isWorkerAuth ? store.getCurrentUser() : null;
-
-    if (isAdmin) {
-      if (profileBannerLoggedOut) profileBannerLoggedOut.style.display = 'none';
-      if (profileBannerLoggedIn) profileBannerLoggedIn.style.display = 'none';
-      return;
-    }
-
-    if (isWorkerAuth && user) {
-      if (workerLoginBtn) workerLoginBtn.style.display = 'none';
-      if (workerSessionInfo) workerSessionInfo.style.display = 'inline-flex';
-      if (navUserNameDisplay) navUserNameDisplay.textContent = `${user.name} (${user.id})`;
-      navUserAvatar.src = user.avatar;
-
-      if (profileBannerLoggedOut) profileBannerLoggedOut.style.display = 'none';
-      if (profileBannerLoggedIn) profileBannerLoggedIn.style.display = 'flex';
-
-      headerUserAvatar.src = user.avatar;
-      headerUserName.textContent = user.name;
-      headerUserId.textContent = user.id;
-      headerUserDept.textContent = user.department;
-      headerUserPos.textContent = user.position;
-
-      const summary = store.getWorkerSummary(user.id);
-      if (summary) {
-        headerStatHours.textContent = summary.completedHours;
-        headerStatTarget.textContent = summary.targetHours;
-        headerStatPending.textContent = summary.pendingHours;
-        tabMyRegsCount.textContent = summary.totalRegisteredCount;
-      }
-    } else {
-      if (workerLoginBtn) workerLoginBtn.style.display = 'inline-flex';
-      if (workerSessionInfo) workerSessionInfo.style.display = 'none';
-
-      if (profileBannerLoggedOut) profileBannerLoggedOut.style.display = 'flex';
-      if (profileBannerLoggedIn) profileBannerLoggedIn.style.display = 'none';
-
-      tabMyRegsCount.textContent = '0';
-    }
-  }
-
-  // Worker Login Modal Triggers & Form Submit
-  document.querySelectorAll('#worker-login-btn, .trigger-worker-login-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('worker-student-id').value = '';
-      openModal('worker-login-modal');
-    });
-  });
-
-  document.querySelectorAll('.quick-student-chip').forEach(chip => {
-    chip.addEventListener('click', (e) => {
-      const id = (e.currentTarget || e.target.closest('[data-id]')).getAttribute('data-id');
-      document.getElementById('worker-student-id').value = id;
-    });
-  });
-
-  if (workerLoginForm) {
-    workerLoginForm.addEventListener('submit', (e) => {
+  if (roleStaffBtn) {
+    roleStaffBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      const studentId = document.getElementById('worker-student-id').value;
-      const res = store.authenticateWorker(studentId);
+      switchToStaffView();
+    });
+  }
 
+  if (roleAdminBtn) {
+    roleAdminBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const currentAdmin = api.getCurrentAdmin();
+      if (currentAdmin) {
+        switchToAdminView();
+      } else {
+        adminLoginModal.classList.add('active');
+      }
+    });
+  }
+
+  function switchToStaffView() {
+    currentRole = 'staff';
+    roleStaffBtn.classList.add('active');
+    roleAdminBtn.classList.remove('active');
+    staffViewSection.style.display = 'block';
+    adminViewSection.style.display = 'none';
+    renderStaffHeaderInfo();
+  }
+
+  function switchToAdminView() {
+    currentRole = 'admin';
+    roleAdminBtn.classList.add('active');
+    roleStaffBtn.classList.remove('active');
+    staffViewSection.style.display = 'none';
+    adminViewSection.style.display = 'block';
+    renderAdminHeaderInfo();
+    renderAdminTables();
+  }
+
+  // LOGIN HANDLERS
+  if (staffLoginForm) {
+    staffLoginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = loginStudentId.value.trim();
+      const res = api.loginStaff(id);
       if (res.success) {
-        closeModal('worker-login-modal');
-        refreshHeaderProfile();
-        renderCurrentView();
-        ui.showToast(`เข้าสู่ระบบสำเร็จ: ${res.worker.name} (${res.worker.id})`, 'success');
-      } else {
-        ui.showToast(res.message, 'danger');
+        staffLoginModal.classList.remove('active');
+        showToast(`เข้าสู่ระบบผู้ปฏิบัติงาน: ${res.user.fullName}`, 'success');
+        switchToStaffView();
+        loadAllData();
       }
     });
   }
 
-  if (workerLogoutBtn) {
-    workerLogoutBtn.addEventListener('click', () => {
-      store.logoutWorker();
-      refreshHeaderProfile();
-      renderCurrentView();
-      ui.showToast('ออกจากระบบผู้ปฏิบัติงานเรียบร้อยแล้ว', 'info');
-    });
-  }
-
-  // --------------------------------------------------------------------------
-  // 2. Role Switcher & Admin Authentication System
-  // --------------------------------------------------------------------------
-  const adminLogoutBtn = document.getElementById('admin-logout-btn');
-  const adminLoginForm = document.getElementById('admin-login-form');
-
-  function syncRoleUI() {
-    const role = store.getCurrentRole();
-    const isAuth = store.isAdminAuthenticated();
-    const adminElements = document.querySelectorAll('.admin-only');
-    const workerElements = document.querySelectorAll('.worker-only');
-
-    if (role === 'admin' && isAuth) {
-      const currentAdmin = store.getCurrentAdmin();
-      const navAdminNameDisplay = document.getElementById('nav-admin-name-display');
-      if (navAdminNameDisplay) {
-        navAdminNameDisplay.textContent = `${currentAdmin.name} (@${currentAdmin.username})`;
-      }
-
-      const adminBannerName = document.getElementById('admin-banner-name');
-      const adminBannerRole = document.getElementById('admin-banner-role');
-      const adminBannerUser = document.getElementById('admin-banner-user');
-      const adminBannerDept = document.getElementById('admin-banner-dept');
-
-      if (adminBannerName) adminBannerName.textContent = currentAdmin.name;
-      if (adminBannerRole) adminBannerRole.textContent = currentAdmin.role || 'Officer';
-      if (adminBannerUser) adminBannerUser.textContent = `@${currentAdmin.username}`;
-      if (adminBannerDept) adminBannerDept.textContent = currentAdmin.department || 'ฝ่ายกิจกรรมและพัฒนาผู้ปฏิบัติงาน';
-
-      roleWorkerBtn.classList.remove('active');
-      roleAdminBtn.classList.add('active');
-      document.body.classList.add('admin-mode');
-
-      adminElements.forEach(el => {
-        if (el.tagName === 'BUTTON' || el.tagName === 'DIV') el.style.display = 'inline-flex';
-        else el.style.display = 'flex';
-      });
-      workerElements.forEach(el => el.style.display = 'none');
-
-      const adminSessionWrapper = document.getElementById('admin-session-wrapper');
-      if (adminSessionWrapper) adminSessionWrapper.style.display = 'inline-flex';
-
-      // Switch tab to Admin Dashboard if currently on worker tab
-      const activeTab = document.querySelector('.tab-btn.active');
-      if (!activeTab || activeTab.classList.contains('worker-only')) {
-        switchTab('view-admin-dashboard');
-      }
-    } else {
-      store.setCurrentRole('worker');
-      roleAdminBtn.classList.remove('active');
-      roleWorkerBtn.classList.add('active');
-      document.body.classList.remove('admin-mode');
-
-      adminElements.forEach(el => el.style.display = 'none');
-      workerElements.forEach(el => {
-        if (el.tagName === 'BUTTON' || el.tagName === 'DIV') el.style.display = 'inline-flex';
-        else el.style.display = 'flex';
-      });
-
-      const adminSessionWrapper = document.getElementById('admin-session-wrapper');
-      if (adminSessionWrapper) adminSessionWrapper.style.display = 'none';
-
-      // Switch tab to All Activities if currently on admin tab
-      const activeTab = document.querySelector('.tab-btn.active');
-      if (!activeTab || activeTab.classList.contains('admin-only')) {
-        switchTab('view-activities');
-      }
-    }
-  }
-
-  roleWorkerBtn.addEventListener('click', () => {
-    store.setCurrentRole('worker');
-    syncRoleUI();
-    ui.showToast('สลับเข้าสู่มุมมองผู้ปฏิบัติงาน (Worker View)', 'info');
-  });
-
-  roleAdminBtn.addEventListener('click', () => {
-    if (store.isAdminAuthenticated()) {
-      store.setCurrentRole('admin');
-      syncRoleUI();
-      ui.showToast('เข้าสู่มุมมองเจ้าหน้าที่ (Officer View)', 'info');
-    } else {
-      document.getElementById('admin-password').value = '';
-      openModal('admin-login-modal');
-    }
-  });
-
-  // Admin Login Form Submit Handler
-  adminLoginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const userVal = document.getElementById('admin-username').value;
-    const passVal = document.getElementById('admin-password').value;
-
-    const result = store.authenticateAdmin(userVal, passVal);
-
-    if (result.success) {
-      closeModal('admin-login-modal');
-      syncRoleUI();
-      switchTab('view-admin-dashboard');
-      ui.showToast('เข้าสู่ระบบเจ้าหน้าที่เรียบร้อยแล้ว', 'success');
-    } else {
-      ui.showToast(result.message, 'danger');
-    }
-  });
-
-  // Admin Logout Handler
-  if (adminLogoutBtn) {
-    adminLogoutBtn.addEventListener('click', () => {
-      if (confirm('คุณต้องการออกจากระบบเจ้าหน้าที่ใช่หรือไม่?')) {
-        store.logoutAdmin();
-        syncRoleUI();
-        switchTab('view-activities');
-        ui.showToast('🚪 ออกจากระบบเจ้าหน้าที่เรียบร้อยแล้ว', 'info');
-      }
-    });
-  }
-
-  // --------------------------------------------------------------------------
-  // 3. Tab Navigation
-  // --------------------------------------------------------------------------
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const viewId = btn.getAttribute('data-view');
-      switchTab(viewId);
-    });
-  });
-
-  function switchTab(viewId) {
-    tabButtons.forEach(b => b.classList.remove('active'));
-    viewSections.forEach(s => s.classList.remove('active'));
-
-    const targetBtn = document.querySelector(`.tab-btn[data-view="${viewId}"]`);
-    const targetSection = document.getElementById(viewId);
-
-    if (targetBtn && targetSection) {
-      targetBtn.classList.add('active');
-      targetSection.classList.add('active');
-      renderCurrentView();
-    }
-  }
-
-  function getActiveViewId() {
-    const activeSection = document.querySelector('.view-section.active');
-    return activeSection ? activeSection.id : 'view-activities';
-  }
-
-  function renderCurrentView() {
-    const viewId = getActiveViewId();
-
-    renderActivitiesGrid();
-
-    if (viewId === 'view-my-summary') {
-      renderMySummary();
-    } else if (viewId === 'view-admin-dashboard') {
-      renderAdminDashboard();
-    } else if (viewId === 'view-admin-activities') {
-      renderAdminActivities();
-    } else if (viewId === 'view-admin-roster') {
-      renderAdminRoster();
-    }
-
-    refreshActiveModalsIfOpen();
-  }
-
-  // --------------------------------------------------------------------------
-  // 4. VIEW 1: Activities Grid Renderer & Event Listeners
-  // --------------------------------------------------------------------------
-  function renderActivitiesGrid() {
-    const activitiesFilterBar = document.getElementById('activities-filter-bar');
-    const activitiesLockedContainer = document.getElementById('activities-locked-container');
-    const isWorkerAuth = store.isWorkerAuthenticated();
-    const isAdmin = store.getCurrentRole() === 'admin' && store.isAdminAuthenticated();
-
-    if (!isWorkerAuth && !isAdmin) {
-      if (activitiesFilterBar) activitiesFilterBar.style.display = 'none';
-      if (activitiesCardsGrid) activitiesCardsGrid.style.display = 'none';
-      if (activitiesLockedContainer) {
-        activitiesLockedContainer.style.display = 'block';
-        activitiesLockedContainer.innerHTML = `
-          <div class="hours-progress-card" style="text-align:center; padding:3.5rem 1.5rem; max-width:700px; margin: 2rem auto;">
-            <div style="font-size:3.5rem; margin-bottom:1rem;">🔒</div>
-            <h2 style="font-size:1.4rem; font-weight:600; margin-bottom:0.5rem; color:var(--text-main);">กรุณาเข้าสู่ระบบด้วยรหัสนักศึกษา</h2>
-            <p style="color:var(--text-muted); max-width:520px; margin:0 auto 1.5rem auto; line-height:1.6;">
-              ท่านต้องเข้าสู่ระบบด้วยรหัสนักศึกษาหรือรหัสผู้ปฏิบัติงานก่อน จึงจะสามารถเข้าถึงรายการกิจกรรมทั้งหมด ค้นหา กรองกิจกรรม และลงทะเบียนเข้าร่วมกิจกรรมได้
-            </p>
-            <button class="btn btn-primary trigger-worker-login-btn" style="font-size:1rem; padding:0.75rem 1.5rem;">🔑 เข้าสู่ระบบด้วยรหัสนักศึกษา</button>
-          </div>
-        `;
-        activitiesLockedContainer.querySelectorAll('.trigger-worker-login-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            document.getElementById('worker-student-id').value = '';
-            openModal('worker-login-modal');
-          });
-        });
-      }
-      return;
-    }
-
-    if (activitiesFilterBar) activitiesFilterBar.style.display = 'flex';
-    if (activitiesCardsGrid) activitiesCardsGrid.style.display = 'grid';
-    if (activitiesLockedContainer) activitiesLockedContainer.style.display = 'none';
-
-    const currentUserId = store.getCurrentUserId();
-    const activities = store.getActivities();
-    const userRegs = store.getRegistrations().filter(r => r.workerId === currentUserId && r.status !== 'cancelled');
-    const registeredActIds = new Set(userRegs.map(r => r.activityId));
-
-    // Filtering
-    const searchTerm = searchInput.value.toLowerCase().trim();
-    const categoryVal = filterCategory.value;
-    const statusVal = filterStatus.value;
-
-    const filtered = activities.filter(act => {
-      if (!act) return false;
-      const titleStr = String(act.title || '').toLowerCase();
-      const idStr = String(act.id || '').toLowerCase();
-      const locStr = String(act.location || '').toLowerCase();
-      const descStr = String(act.description || '').toLowerCase();
-
-      const matchSearch = !searchTerm || titleStr.includes(searchTerm) ||
-        idStr.includes(searchTerm) ||
-        locStr.includes(searchTerm) ||
-        descStr.includes(searchTerm);
-      const matchCategory = categoryVal === 'all' || act.category === categoryVal;
-      const matchStatus = statusVal === 'all' || act.status === statusVal;
-
-      return matchSearch && matchCategory && matchStatus;
-    });
-
-    // เรียงลำดับกิจกรรม: วันที่จัดกิจกรรมที่ใกล้ถึงขึ้นก่อน (กิจกรรมที่เสร็จสิ้นแล้วอยู่ด้านล่าง)
-    filtered.sort((a, b) => {
-      const aIsCompleted = a.status === 'completed' ? 1 : 0;
-      const bIsCompleted = b.status === 'completed' ? 1 : 0;
-      if (aIsCompleted !== bIsCompleted) {
-        return aIsCompleted - bIsCompleted;
-      }
-
-      const timeA = a.date ? new Date(a.date).getTime() : Infinity;
-      const timeB = b.date ? new Date(b.date).getTime() : Infinity;
-      const validA = isNaN(timeA) ? Infinity : timeA;
-      const validB = isNaN(timeB) ? Infinity : timeB;
-
-      return validA - validB;
-    });
-
-    activitiesCountBadge.textContent = filtered.length;
-    activitiesCardsGrid.innerHTML = '';
-
-    if (filtered.length === 0) {
-      activitiesCardsGrid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
-          <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔍</div>
-          <h3>ไม่พบกิจกรรมที่ตรงตามเงื่อนไข</h3>
-          <p>ลองปรับเปลี่ยนคำค้นหา หรือรีเซ็ตตัวกรอง</p>
-        </div>
-      `;
-      return;
-    }
-
-    filtered.forEach(act => {
-      const isReg = registeredActIds.has(act.id);
-      const card = ui.renderActivityCard(act, currentUserId, isReg);
-      activitiesCardsGrid.appendChild(card);
-    });
-
-    attachActivityCardListeners();
-  }
-
-  searchInput.addEventListener('input', renderActivitiesGrid);
-  filterCategory.addEventListener('change', renderActivitiesGrid);
-  filterStatus.addEventListener('change', renderActivitiesGrid);
-
-  function attachActivityCardListeners() {
-    // Register Button
-    document.querySelectorAll('.register-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (!store.isWorkerAuthenticated()) {
-          ui.showToast('กรุณาเข้าสู่ระบบด้วยรหัสนักศึกษาก่อนลงทะเบียนกิจกรรม', 'info');
-          document.getElementById('worker-student-id').value = '';
-          openModal('worker-login-modal');
-          return;
-        }
-
-        const targetEl = e.currentTarget || e.target.closest('[data-act-id]');
-        const actId = targetEl ? targetEl.getAttribute('data-act-id') : null;
-        if (!actId) return;
-
-        const currentUserId = store.getCurrentUserId();
-        try {
-          store.registerWorker(currentUserId, actId);
-          ui.showToast('ลงทะเบียนเข้าร่วมกิจกรรมเรียบร้อยแล้ว!', 'success');
-          refreshHeaderProfile();
-          renderActivitiesGrid();
-        } catch (err) {
-          ui.showToast(err.message, 'danger');
-        }
-      });
-    });
-
-    // Cancel Registration Button
-    document.querySelectorAll('.cancel-reg-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const targetEl = e.currentTarget || e.target.closest('[data-act-id]');
-        const actId = targetEl ? targetEl.getAttribute('data-act-id') : null;
-        if (!actId) return;
-
-        const currentUserId = store.getCurrentUserId();
-        if (confirm('คุณต้องการยกเลิกการลงทะเบียนกิจกรรมนี้ใช่หรือไม่?')) {
-          store.cancelRegistration(currentUserId, actId);
-          ui.showToast('ยกเลิกการลงทะเบียนเรียบร้อยแล้ว', 'info');
-          refreshHeaderProfile();
-          renderActivitiesGrid();
-        }
-      });
-    });
-
-    // View Details Button, Card Title, or Card Banner
-    document.querySelectorAll('.view-details-btn, .card-title, .card-banner').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const actId = el.getAttribute('data-act-id');
-        if (actId) {
-          showActivityDetailsModal(actId);
-        }
-      });
-    });
-  }
-
-  // --------------------------------------------------------------------------
-  // 5. VIEW 2: My Summary & Print Transcript
-  // --------------------------------------------------------------------------
-  function renderMySummary() {
-    const summaryContainer = document.getElementById('individual-summary-container');
-    const isAuth = store.isWorkerAuthenticated();
-
-    if (!isAuth) {
-      summaryContainer.innerHTML = `
-        <div class="hours-progress-card" style="text-align:center; padding:3.5rem 1.5rem;">
-          <div style="font-size:3.5rem; margin-bottom:1rem;">🔒</div>
-          <h2 style="font-size:1.4rem; font-weight:600; margin-bottom:0.5rem;">กรุณาเข้าสู่ระบบด้วยรหัสนักศึกษา</h2>
-          <p style="color:var(--text-muted); max-width:500px; margin:0 auto 1.5rem auto;">
-            ท่านต้องเข้าสู่ระบบด้วยรหัสนักศึกษาหรือรหัสผู้ปฏิบัติงานก่อน จึงจะสามารถดูสรุปผลชั่วโมงกิจกรรมสะสม ประวัติการลงทะเบียน และพิมพ์ใบรับรองส่วนบุคคลได้
-          </p>
-          <button class="btn btn-primary trigger-worker-login-btn">🔑 เข้าสู่ระบบด้วยรหัสนักศึกษา</button>
-        </div>
-      `;
-      document.querySelectorAll('.trigger-worker-login-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.getElementById('worker-student-id').value = '';
-          openModal('worker-login-modal');
-        });
-      });
-      return;
-    }
-
-    const currentUserId = store.getCurrentUserId();
-    const summaryData = store.getWorkerSummary(currentUserId);
-
-    ui.renderIndividualSummary(summaryContainer, summaryData);
-    ui.renderPrintableTranscript(summaryData);
-
-    const printBtn = document.getElementById('print-transcript-btn');
-    if (printBtn) {
-      printBtn.addEventListener('click', () => {
-        window.print();
-      });
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // 6. VIEW 3, 4, 5: Admin Dashboards & Tables
-  // --------------------------------------------------------------------------
-  function renderAdminDashboard() {
-    const activities = store.getActivities();
-    const workers = store.getWorkers();
-    const regs = store.getRegistrations().filter(r => r.status !== 'cancelled');
-    const completedRegs = regs.filter(r => r.status === 'completed');
-    const totalApprovedHours = completedRegs.reduce((sum, r) => sum + (r.hoursGranted || 0), 0);
-
-    adminStatTotalAct.textContent = activities.length;
-    adminStatTotalWorkers.textContent = workers.length;
-    adminStatTotalRegs.textContent = regs.length;
-    adminStatTotalHours.textContent = totalApprovedHours;
-  }
-
-  function renderAdminActivities() {
-    const activities = store.getActivities();
-    adminActivitiesTableBody.innerHTML = '';
-    ui.renderAdminActivityTable(adminActivitiesTableBody, activities);
-
-    // Edit Activity Listener
-    document.querySelectorAll('.admin-edit-act-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
-        showActivityFormModal(actId);
-      });
-    });
-
-    // Delete Activity Listener
-    document.querySelectorAll('.admin-delete-act-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
-        if (confirm(`คุณต้องการลบกิจกรรมรหัส ${actId} ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`)) {
-          store.deleteActivity(actId);
-          ui.showToast('ลบกิจกรรมเรียบร้อยแล้ว', 'success');
-          refreshHeaderProfile();
-          renderAdminActivities();
-        }
-      });
-    });
-
-    // Manage Roster & Attendance Listener
-    document.querySelectorAll('.admin-manage-roster-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const actId = (e.currentTarget || e.target.closest('[data-act-id]')).getAttribute('data-act-id');
-        showActivityRosterModal(actId);
-      });
-    });
-
-    // Reorder Activity Listeners
-    document.querySelectorAll('.btn-reorder-act-up').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const actId = e.currentTarget.getAttribute('data-act-id');
-        if (store.reorderActivity(actId, 'up')) {
-          ui.showToast('เลื่อนลำดับกิจกรรมขึ้นเรียบร้อยแล้ว', 'info');
-          renderCurrentView();
-        }
-      });
-    });
-
-    document.querySelectorAll('.btn-reorder-act-down').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const actId = e.currentTarget.getAttribute('data-act-id');
-        if (store.reorderActivity(actId, 'down')) {
-          ui.showToast('เลื่อนลำดับกิจกรรมลงเรียบร้อยแล้ว', 'info');
-          renderCurrentView();
-        }
-      });
-    });
-
-    // Drag & Drop Reordering for Activities
-    setupTableDragAndDrop(adminActivitiesTableBody, (fromIdx, toIdx) => {
-      if (store.moveActivity(fromIdx, toIdx)) {
-        ui.showToast('ลากสลับลำดับกิจกรรมเรียบร้อยแล้ว', 'success');
-        renderCurrentView();
-      }
-    });
-  }
-
-  function setupTableDragAndDrop(tbody, moveCallback) {
-    if (!tbody) return;
-    let draggedIndex = null;
-
-    tbody.querySelectorAll('.draggable-row').forEach(row => {
-      row.addEventListener('dragstart', (e) => {
-        draggedIndex = parseInt(row.getAttribute('data-index'), 10);
-        row.classList.add('dragging');
-        if (e.dataTransfer) {
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', String(draggedIndex));
-        }
-      });
-
-      row.addEventListener('dragend', () => {
-        row.classList.remove('dragging');
-        tbody.querySelectorAll('.draggable-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
-      });
-
-      row.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-        const targetIndex = parseInt(row.getAttribute('data-index'), 10);
-        if (draggedIndex === null || isNaN(draggedIndex) || targetIndex === draggedIndex) return;
-
-        tbody.querySelectorAll('.draggable-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
-        if (targetIndex < draggedIndex) {
-          row.classList.add('drag-over-top');
-        } else {
-          row.classList.add('drag-over-bottom');
-        }
-      });
-
-      row.addEventListener('dragleave', () => {
-        row.classList.remove('drag-over-top', 'drag-over-bottom');
-      });
-
-      row.addEventListener('drop', (e) => {
-        e.preventDefault();
-        tbody.querySelectorAll('.draggable-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
-        const targetIndex = parseInt(row.getAttribute('data-index'), 10);
-        if (draggedIndex !== null && !isNaN(draggedIndex) && targetIndex !== draggedIndex) {
-          moveCallback(draggedIndex, targetIndex);
-        }
-      });
-    });
-  }
-
-  function renderAdminRoster() {
-    const workers = store.getWorkers();
-    ui.renderAdminRosterTable(adminRosterTableBody, workers);
-
-    // Manual Register Button Listener
-    document.querySelectorAll('.admin-manual-register-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const workerId = (e.currentTarget || e.target.closest('[data-worker-id]')).getAttribute('data-worker-id');
-        showManualRegisterModal(workerId);
-      });
-    });
-
-    // Edit Worker Listener
-    document.querySelectorAll('.admin-edit-worker-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const workerId = (e.currentTarget || e.target.closest('[data-worker-id]')).getAttribute('data-worker-id');
-        showEditWorkerModal(workerId);
-      });
-    });
-
-    // Delete Worker Listener
-    document.querySelectorAll('.admin-delete-worker-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const workerId = (e.currentTarget || e.target.closest('[data-worker-id]')).getAttribute('data-worker-id');
-        const worker = store.getWorkers().find(w => w.id.toUpperCase() === workerId.toUpperCase());
-        const workerName = worker ? worker.name : workerId;
-        if (confirm(`คุณต้องการลบรายชื่อผู้ปฏิบัติงาน "${workerName}" (${workerId}) ออกจากระบบใช่หรือไม่?`)) {
-          try {
-            store.deleteWorker(workerId);
-            ui.showToast(`ลบรายชื่อผู้ปฏิบัติงาน "${workerName}" เรียบร้อยแล้ว`, 'info');
-            refreshHeaderProfile();
-            renderAdminRoster();
-            populateUserDropdown();
-          } catch (err) {
-            ui.showToast(err.message, 'danger');
-          }
-        }
-      });
-    });
-
-    // Reorder Worker Listeners
-    document.querySelectorAll('.btn-reorder-worker-up').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const workerId = e.currentTarget.getAttribute('data-worker-id');
-        if (store.reorderWorker(workerId, 'up')) {
-          ui.showToast('เลื่อนลำดับผู้ปฏิบัติงานขึ้นเรียบร้อยแล้ว', 'info');
-          renderCurrentView();
-        }
-      });
-    });
-
-    document.querySelectorAll('.btn-reorder-worker-down').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const workerId = e.currentTarget.getAttribute('data-worker-id');
-        if (store.reorderWorker(workerId, 'down')) {
-          ui.showToast('เลื่อนลำดับผู้ปฏิบัติงานลงเรียบร้อยแล้ว', 'info');
-          renderCurrentView();
-        }
-      });
-    });
-
-    // Drag & Drop Reordering for Workers
-    setupTableDragAndDrop(adminRosterTableBody, (fromIdx, toIdx) => {
-      if (store.moveWorker(fromIdx, toIdx)) {
-        ui.showToast('ลากสลับลำดับผู้ปฏิบัติงานเรียบร้อยแล้ว', 'success');
-        renderCurrentView();
-      }
-    });
-  }
-
-  // Edit Worker Form Handler
-  const editWorkerForm = document.getElementById('edit-worker-form');
-
-  function showEditWorkerModal(workerId) {
-    const worker = store.getWorkers().find(w => w.id.toUpperCase() === workerId.toUpperCase());
-    if (!worker) return;
-
-    document.getElementById('edit-worker-id').value = worker.id;
-    document.getElementById('edit-worker-name').value = worker.name;
-    if (document.getElementById('edit-worker-nickname')) {
-      document.getElementById('edit-worker-nickname').value = worker.nickname || '';
-    }
-    if (document.getElementById('edit-worker-year')) {
-      document.getElementById('edit-worker-year').value = worker.year || 'ชั้นปีที่ 1';
-    }
-    document.getElementById('edit-worker-dept').value = worker.department || '';
-    document.getElementById('edit-worker-pos').value = worker.position || '';
-    document.getElementById('edit-worker-email').value = worker.email || '';
-    document.getElementById('edit-worker-target').value = worker.targetHours || 30;
-    document.getElementById('edit-worker-avatar').value = worker.avatar || '';
-
-    openModal('edit-worker-modal');
-  }
-
-  if (editWorkerForm) {
-    editWorkerForm.addEventListener('submit', (e) => {
+  if (adminLoginForm) {
+    adminLoginForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const workerId = document.getElementById('edit-worker-id').value;
-      const nickEl = document.getElementById('edit-worker-nickname');
-      const yearEl = document.getElementById('edit-worker-year');
-
-      const data = {
-        name: document.getElementById('edit-worker-name').value.trim(),
-        nickname: nickEl ? nickEl.value.trim() : '',
-        year: yearEl ? yearEl.value : 'ชั้นปีที่ 1',
-        department: document.getElementById('edit-worker-dept').value.trim(),
-        position: document.getElementById('edit-worker-pos').value.trim(),
-        email: document.getElementById('edit-worker-email').value.trim(),
-        targetHours: parseInt(document.getElementById('edit-worker-target').value) || 30,
-        avatar: document.getElementById('edit-worker-avatar').value.trim()
-      };
-
-      try {
-        store.updateWorker(workerId, data);
-        ui.showToast(`อัปเดตข้อมูลผู้ปฏิบัติงาน "${data.name}" เรียบร้อยแล้ว`, 'success');
-        closeModal('edit-worker-modal');
-        refreshHeaderProfile();
-        renderAdminRoster();
-        populateUserDropdown();
-      } catch (err) {
-        ui.showToast(err.message, 'danger');
-      }
-    });
-  }
-
-  // --------------------------------------------------------------------------
-  // 7. Modals Controllers & Event Handlers
-  // --------------------------------------------------------------------------
-  function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.classList.add('open');
-  }
-
-  function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.classList.remove('open');
-  }
-
-  document.querySelectorAll('[data-close-modal]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const modalId = btn.getAttribute('data-close-modal');
-      closeModal(modalId);
-    });
-  });
-
-  // Fullscreen Image Lightbox Helper
-  function openImageViewer(src, caption = '') {
-    if (!src) return;
-    const imgEl = document.getElementById('image-viewer-img');
-    const captionEl = document.getElementById('image-viewer-caption');
-    if (imgEl) imgEl.src = src;
-    if (captionEl) {
-      captionEl.textContent = caption || 'รูปภาพขยายเต็ม (Full Resolution Preview)';
-      captionEl.style.display = caption ? 'inline-block' : 'none';
-    }
-    openModal('image-viewer-modal');
-  }
-  window.openImageViewer = openImageViewer;
-
-  // Image Upload Processor (Supports file of ANY size, converts to optimized Data URL)
-  function processUploadedImageFile(file, callback) {
-    if (!file) return;
-    ui.showToast('กำลังประมวลผลรูปภาพ...', 'info');
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const img = new Image();
-      img.onload = function () {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 1400; // max 1400px dimension for ultra sharp quality
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-        callback(dataUrl);
-        ui.showToast('อัปโหลดรูปภาพเรียบร้อยแล้ว', 'success');
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  // Image File Input Event Handlers
-  const actFormBannerFile = document.getElementById('act-form-banner-file');
-  const actFormBannerInput = document.getElementById('act-form-banner');
-  const actFormBannerPreviewBox = document.getElementById('act-form-banner-preview-box');
-  const actFormBannerPreviewImg = document.getElementById('act-form-banner-preview-img');
-
-  if (actFormBannerFile) {
-    actFormBannerFile.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        processUploadedImageFile(file, (dataUrl) => {
-          if (actFormBannerInput) actFormBannerInput.value = dataUrl;
-          if (actFormBannerPreviewImg) actFormBannerPreviewImg.src = dataUrl;
-          if (actFormBannerPreviewBox) actFormBannerPreviewBox.style.display = 'block';
-        });
-      }
-    });
-  }
-
-  const workerFormAvatarFile = document.getElementById('worker-form-avatar-file');
-  const workerFormAvatarInput = document.getElementById('worker-form-avatar');
-  const workerFormAvatarPreviewBox = document.getElementById('worker-form-avatar-preview-box');
-  const workerFormAvatarPreviewImg = document.getElementById('worker-form-avatar-preview-img');
-
-  if (workerFormAvatarFile) {
-    workerFormAvatarFile.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        processUploadedImageFile(file, (dataUrl) => {
-          if (workerFormAvatarInput) workerFormAvatarInput.value = dataUrl;
-          if (workerFormAvatarPreviewImg) workerFormAvatarPreviewImg.src = dataUrl;
-          if (workerFormAvatarPreviewBox) workerFormAvatarPreviewBox.style.display = 'block';
-        });
-      }
-    });
-  }
-
-  const editWorkerAvatarFile = document.getElementById('edit-worker-avatar-file');
-  const editWorkerAvatarInput = document.getElementById('edit-worker-avatar');
-  const editWorkerAvatarPreviewBox = document.getElementById('edit-worker-avatar-preview-box');
-  const editWorkerAvatarPreviewImg = document.getElementById('edit-worker-avatar-preview-img');
-
-  if (editWorkerAvatarFile) {
-    editWorkerAvatarFile.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        processUploadedImageFile(file, (dataUrl) => {
-          if (editWorkerAvatarInput) editWorkerAvatarInput.value = dataUrl;
-          if (editWorkerAvatarPreviewImg) editWorkerAvatarPreviewImg.src = dataUrl;
-          if (editWorkerAvatarPreviewBox) editWorkerAvatarPreviewBox.style.display = 'block';
-        });
-      }
-    });
-  }
-
-  // Modal 1: Details Modal
-  function showActivityDetailsModal(actId) {
-    window._activeDetailsActivityId = actId;
-    const act = store.getActivityById(actId);
-    if (!act) return;
-
-    const currentUserId = store.getCurrentUserId();
-    const isUserRegistered = store.getRegistrations().some(r => r.workerId === currentUserId && r.activityId === actId && r.status !== 'cancelled');
-    const isFull = act.registeredCount >= act.maxCapacity;
-
-    let statusBadgeHtml = '';
-    if (act.status === 'completed') {
-      statusBadgeHtml = `<span class="status-badge completed">กิจกรรมเสร็จสิ้นแล้ว</span>`;
-    } else if (isUserRegistered) {
-      statusBadgeHtml = `<span class="status-badge registered">คุณลงทะเบียนแล้ว</span>`;
-    } else if (isFull || act.status === 'full') {
-      statusBadgeHtml = `<span class="status-badge full">ที่นั่งเต็ม</span>`;
-    } else {
-      statusBadgeHtml = `<span class="status-badge open">เปิดรับสมัคร</span>`;
-    }
-
-    let actionButtonHtml = '';
-    if (act.status === 'completed') {
-      actionButtonHtml = `<button class="btn btn-outline btn-disabled" disabled style="width:100%;">กิจกรรมเสร็จสิ้นแล้ว</button>`;
-    } else if (isUserRegistered) {
-      actionButtonHtml = `<button class="btn btn-danger detail-cancel-reg-btn" data-act-id="${act.id}" style="width:100%;">ยกเลิกการลงทะเบียน</button>`;
-    } else if (isFull || act.status === 'full') {
-      actionButtonHtml = `<button class="btn btn-outline btn-disabled" disabled style="width:100%;">ที่นั่งเต็มแล้ว</button>`;
-    } else {
-      actionButtonHtml = `<button class="btn btn-primary detail-register-btn" data-act-id="${act.id}" style="width:100%;">ลงทะเบียนเข้าร่วมกิจกรรมนี้</button>`;
-    }
-
-    const percentFilled = Math.min(100, Math.round((act.registeredCount / act.maxCapacity) * 100));
-    const detailsBody = document.getElementById('details-act-body');
-    const detailsTitle = document.getElementById('details-act-title');
-
-    detailsTitle.textContent = act.title;
-    detailsBody.innerHTML = `
-      <div style="position:relative; margin-bottom:1.25rem; border-radius:var(--radius-md); overflow:hidden; cursor:pointer;" class="detail-banner-container" title="คลิกเพื่อขยายดูรูปภาพขนาดเต็ม">
-        <img src="${act.banner}" style="width:100%; max-height:300px; object-fit:cover; display:block;" alt="banner" />
-        <div style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.75); color:#fff; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600; backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,0.3);">
-          🔍 คลิกดูรูปขยายเต็ม
-        </div>
-      </div>
-      
-      <div style="display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; align-items:center;">
-        ${statusBadgeHtml}
-        <span class="category-tag" style="position:static;">${act.category}</span>
-        <span class="hours-badge" style="position:static;">⏱ ${act.hours} ชม.กิจกรรม</span>
-        <span style="font-size:0.85rem; color:var(--text-muted); padding:4px 8px; background:var(--bg-main); border-radius:var(--radius-sm); font-weight:600;">รหัส: ${act.id}</span>
-      </div>
-
-      <div style="background:var(--bg-main); padding:1rem; border-radius:var(--radius-md); margin-bottom:1.25rem; border:1px solid var(--border-color);">
-        <h4 style="font-size:0.95rem; font-weight:600; margin-bottom:6px; color:var(--text-main);">รายละเอียดกิจกรรม:</h4>
-        <p style="font-size:0.925rem; line-height:1.7; color:var(--text-main); white-space:pre-line;">${act.description}</p>
-      </div>
-      
-      <div class="card-meta" style="font-size:0.9rem; padding:1.25rem; background:var(--bg-surface); border-radius:var(--radius-md); margin-bottom:1.25rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
-        <div class="meta-item">
-          <span class="meta-icon">📅</span>
-          <div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">กำหนดการวันเวลา</div>
-            <strong style="color:var(--text-main);">${ui.formatThaiDate(act.date)} | ${act.time}</strong>
-          </div>
-        </div>
-        <div class="meta-item">
-          <span class="meta-icon">📍</span>
-          <div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">สถานที่จัดกิจกรรม</div>
-            <strong style="color:var(--text-main);">${act.location}</strong>
-          </div>
-        </div>
-        <div class="meta-item">
-          <span class="meta-icon">👥</span>
-          <div style="width:100%;">
-            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted);">
-              <span>ที่นั่งลงทะเบียน</span>
-              <strong>${act.registeredCount} / ${act.maxCapacity} คน (${percentFilled}%)</strong>
-            </div>
-            <div class="progress-bar-bg" style="margin-top:4px;">
-              <div class="progress-bar-fill ${isFull ? 'full' : ''}" style="width: ${percentFilled}%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:1rem;">
-        ${actionButtonHtml}
-      </div>
-    `;
-
-    // Click banner to view lightbox
-    const bannerContainer = detailsBody.querySelector('.detail-banner-container');
-    if (bannerContainer) {
-      bannerContainer.addEventListener('click', () => {
-        openImageViewer(act.banner, act.title);
-      });
-    }
-
-    // Detail Register Button
-    const detailRegBtn = detailsBody.querySelector('.detail-register-btn');
-    if (detailRegBtn) {
-      detailRegBtn.addEventListener('click', (e) => {
-        if (e) { e.stopPropagation(); e.preventDefault(); }
-        if (!store.isWorkerAuthenticated()) {
-          ui.showToast('กรุณาเข้าสู่ระบบด้วยรหัสนักศึกษาก่อนลงทะเบียนกิจกรรม', 'info');
-          closeModal('activity-details-modal');
-          openModal('worker-login-modal');
-          return;
-        }
-        try {
-          store.registerWorker(currentUserId, act.id);
-          ui.showToast('ลงทะเบียนเข้าร่วมกิจกรรมเรียบร้อยแล้ว!', 'success');
-          closeModal('activity-details-modal');
-          refreshHeaderProfile();
-          renderActivitiesGrid();
-        } catch (err) {
-          ui.showToast(err.message, 'danger');
-        }
-      });
-    }
-
-    // Detail Cancel Button
-    const detailCancelBtn = detailsBody.querySelector('.detail-cancel-reg-btn');
-    if (detailCancelBtn) {
-      detailCancelBtn.addEventListener('click', (e) => {
-        if (e) { e.stopPropagation(); e.preventDefault(); }
-        if (confirm('คุณต้องการยกเลิกการลงทะเบียนกิจกรรมนี้ใช่หรือไม่?')) {
-          store.cancelRegistration(currentUserId, act.id);
-          ui.showToast('ยกเลิกการลงทะเบียนเรียบร้อยแล้ว', 'info');
-          closeModal('activity-details-modal');
-          refreshHeaderProfile();
-          renderActivitiesGrid();
-        }
-      });
-    }
-
-    openModal('activity-details-modal');
-  }
-
-  // Modal 2: Add/Edit Activity Form Handler
-  const activityFormModal = document.getElementById('activity-form-modal');
-  const activityForm = document.getElementById('activity-form');
-  const actFormModalTitle = document.getElementById('act-form-modal-title');
-
-  function formatDateForInput(dateInput) {
-    if (!dateInput) return new Date().toISOString().split('T')[0];
-
-    if (dateInput instanceof Date) {
-      if (isNaN(dateInput.getTime())) return new Date().toISOString().split('T')[0];
-      let y = dateInput.getFullYear();
-      if (y > 2400) y -= 543;
-      const m = String(dateInput.getMonth() + 1).padStart(2, '0');
-      const d = String(dateInput.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-
-    let str = String(dateInput).trim();
-    if (!str) return new Date().toISOString().split('T')[0];
-
-    // Handle ISO strings or strings with T / Z (e.g. "2026-08-10T00:00:00.000Z")
-    if (str.includes('T') || str.includes('Z')) {
-      const isoDate = new Date(str);
-      if (!isNaN(isoDate.getTime())) {
-        let y = isoDate.getFullYear();
-        if (y > 2400) y -= 543;
-        const m = String(isoDate.getMonth() + 1).padStart(2, '0');
-        const d = String(isoDate.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-      }
-      str = str.split('T')[0].split(' ')[0];
-    }
-
-    // 1. YYYY-MM-DD or YYYY/MM/DD or YYYY-M-D
-    const ymdMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if (ymdMatch) {
-      let y = parseInt(ymdMatch[1], 10);
-      if (y > 2400) y -= 543;
-      const m = String(ymdMatch[2]).padStart(2, '0');
-      const d = String(ymdMatch[3]).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-
-    // 2. DD/MM/YYYY or DD-MM-YYYY or D-M-YYYY
-    const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-    if (dmyMatch) {
-      const d = String(dmyMatch[1]).padStart(2, '0');
-      const m = String(dmyMatch[2]).padStart(2, '0');
-      let y = parseInt(dmyMatch[3], 10);
-      if (y > 2400) y -= 543;
-      return `${y}-${m}-${d}`;
-    }
-
-    // 3. Thai text format like "10 ส.ค. 2569" or "10 สิงหาคม 2569"
-    const thaiMonths = {
-      'ม.ค.': '01', 'มกราคม': '01',
-      'ก.พ.': '02', 'กุมภาพันธ์': '02',
-      'มี.ค.': '03', 'มีนาคม': '03',
-      'เม.ย.': '04', 'เมษายน': '04',
-      'พ.ค.': '05', 'พฤษภาคม': '05',
-      'มิ.ย.': '06', 'มิถุนายน': '06',
-      'ก.ค.': '07', 'กรกฎาคม': '07',
-      'ส.ค.': '08', 'สิงหาคม': '08',
-      'ก.ย.': '09', 'กันยายน': '09',
-      'ต.ค.': '10', 'ตุลาคม': '10',
-      'พ.ย.': '11', 'พฤศจิกายน': '11',
-      'ธ.ค.': '12', 'ธันวาคม': '12'
-    };
-    for (const [thName, monthNum] of Object.entries(thaiMonths)) {
-      if (str.includes(thName)) {
-        const parts = str.split(/\s+/);
-        const day = String(parseInt(parts[0], 10) || 1).padStart(2, '0');
-        let year = parseInt(parts[parts.length - 1], 10) || new Date().getFullYear();
-        if (year > 2400) year -= 543;
-        return `${year}-${monthNum}-${day}`;
-      }
-    }
-
-    // 4. Standard Date parse fallback
-    try {
-      const parsedDate = new Date(str);
-      if (!isNaN(parsedDate.getTime())) {
-        let year = parsedDate.getFullYear();
-        if (year > 2400) year -= 543;
-        const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(parsedDate.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      }
-    } catch (e) { }
-
-    return new Date().toISOString().split('T')[0];
-  }
-
-  function showActivityFormModal(actId = null) {
-    activityForm.reset();
-    if (actId) {
-      const act = store.getActivityById(actId);
-      if (!act) return;
-
-      populateCategoryDropdowns(act.category);
-      actFormModalTitle.textContent = 'แก้ไขกิจกรรม';
-      document.getElementById('act-form-id').value = act.id;
-      document.getElementById('act-form-title').value = act.title;
-      document.getElementById('act-form-desc').value = act.description;
-      document.getElementById('act-form-category').value = act.category;
-      document.getElementById('act-form-hours').value = act.hours;
-      document.getElementById('act-form-date').value = formatDateForInput(act.date);
-      document.getElementById('act-form-time').value = act.time;
-      document.getElementById('act-form-location').value = act.location;
-      document.getElementById('act-form-capacity').value = act.maxCapacity;
-      document.getElementById('act-form-status').value = act.status;
-      document.getElementById('act-form-banner').value = act.banner;
-    } else {
-      populateCategoryDropdowns();
-      actFormModalTitle.textContent = 'เพิ่มกิจกรรมใหม่';
-      document.getElementById('act-form-id').value = '';
-      document.getElementById('act-form-date').value = formatDateForInput(new Date());
-    }
-    openModal('activity-form-modal');
-  }
-
-  document.querySelectorAll('#admin-add-activity-btn, #admin-add-activity-btn-2, .trigger-add-activity-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!store.isAdminAuthenticated()) {
-        ui.showToast('กรุณาเข้าสู่ระบบเจ้าหน้าที่ก่อนทำการเพิ่มกิจกรรมใหม่', 'info');
-        document.getElementById('admin-password').value = '';
-        openModal('admin-login-modal');
-        return;
-      }
-      showActivityFormModal();
-    });
-  });
-
-  activityForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = document.getElementById('act-form-id').value;
-
-    const data = {
-      title: document.getElementById('act-form-title').value.trim(),
-      description: document.getElementById('act-form-desc').value.trim(),
-      category: document.getElementById('act-form-category').value,
-      hours: parseFloat(document.getElementById('act-form-hours').value) || 3,
-      date: formatDateForInput(document.getElementById('act-form-date').value),
-      time: document.getElementById('act-form-time').value.trim(),
-      location: document.getElementById('act-form-location').value.trim(),
-      maxCapacity: parseInt(document.getElementById('act-form-capacity').value) || 30,
-      status: document.getElementById('act-form-status').value,
-      banner: document.getElementById('act-form-banner').value.trim() || 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=600'
-    };
-
-    const isAutoEnroll = document.getElementById('act-form-auto-enroll') ? document.getElementById('act-form-auto-enroll').checked : false;
-
-    if (id) {
-      store.updateActivity(id, data);
-      ui.showToast('อัปเดตข้อมูลกิจกรรมเรียบร้อยแล้ว', 'success');
-    } else {
-      const newAct = store.addActivity(data);
-
-      if (isAutoEnroll) {
-        const workers = store.getWorkers();
-        workers.forEach(w => {
-          try {
-            const reg = store.registerWorker(w.id, newAct.id);
-            if (data.status === 'completed') {
-              store.updateAttendance(reg.id, 'completed', data.hours, 'อนุมัติชั่วโมงอัตโนมัติจากการสร้างกิจกรรมเสร็จสิ้น');
-            }
-          } catch (err) {
-            // ignore if already registered
-          }
-        });
-        ui.showToast(`✨ สร้างกิจกรรมใหม่ (${data.hours} ชม.) พร้อมปรับเพิ่มชั่วโมงสะสมและเป้าหมายผู้ปฏิบัติงานทุกคนเรียบร้อยแล้ว`, 'success');
+      const u = adminUsernameInput.value.trim();
+      const p = adminPasswordInput.value.trim();
+      const res = api.loginAdmin(u, p);
+      if (res.success) {
+        adminLoginModal.classList.remove('active');
+        showToast(`เข้าสู่ระบบเจ้าหน้าที่ (Admin): ${res.admin.fullName}`, 'success');
+        switchToAdminView();
       } else {
-        ui.showToast(`สร้างกิจกรรมใหม่ (${data.hours} ชม.) เรียบร้อยแล้ว`, 'success');
+        showToast(res.message, 'error');
       }
-    }
-
-    closeModal('activity-form-modal');
-    refreshHeaderProfile();
-    renderCurrentView();
-  });
-
-  // Modal 3: Add Worker Form Handler
-  const workerForm = document.getElementById('worker-form');
-
-  document.querySelectorAll('#admin-add-worker-btn, #admin-add-worker-btn-2').forEach(btn => {
-    btn.addEventListener('click', () => {
-      workerForm.reset();
-      openModal('worker-form-modal');
     });
-  });
+  }
 
-  workerForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const idEl = document.getElementById('worker-form-id');
-    const nameEl = document.getElementById('worker-form-name');
-    const nickEl = document.getElementById('worker-form-nickname');
-    const yearEl = document.getElementById('worker-form-year');
-    const deptEl = document.getElementById('worker-form-dept');
-    const posEl = document.getElementById('worker-form-pos');
-    const emailEl = document.getElementById('worker-form-email');
-    const targetEl = document.getElementById('worker-form-target');
-    const avatarEl = document.getElementById('worker-form-avatar');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentRole === 'admin') {
+        const admin = api.getCurrentAdmin();
+        if (admin) {
+          api.setCurrentAdmin(null);
+          switchToStaffView();
+          showToast('ออกจากระบบเจ้าหน้าที่ (Admin) เรียบร้อยแล้ว', 'info');
+        } else {
+          adminLoginModal.classList.add('active');
+        }
+      } else {
+        const staff = api.getCurrentStaff();
+        if (staff) {
+          api.setCurrentStaff(null);
+          loadAllData();
+          showToast('ออกจากระบบผู้ปฏิบัติงานเรียบร้อยแล้ว', 'info');
+        } else {
+          staffLoginModal.classList.add('active');
+        }
+      }
+    });
+  }
 
-    const data = {
-      id: idEl ? idEl.value.trim() : '',
-      name: nameEl ? nameEl.value.trim() : '',
-      nickname: nickEl ? nickEl.value.trim() : '',
-      year: yearEl ? yearEl.value : 'ชั้นปีที่ 1',
-      department: deptEl ? deptEl.value.trim() : '',
-      position: posEl ? posEl.value.trim() : '',
-      email: emailEl ? emailEl.value.trim() : '',
-      targetHours: (targetEl ? parseInt(targetEl.value) : 30) || 30,
-      avatar: avatarEl ? avatarEl.value.trim() : ''
-    };
+  const openStaffLoginHeroBtn = document.getElementById('openStaffLoginHeroBtn');
+  if (openStaffLoginHeroBtn) {
+    openStaffLoginHeroBtn.addEventListener('click', () => {
+      staffLoginModal.classList.add('active');
+    });
+  }
 
-    if (!data.name || !data.department) {
-      ui.showToast('กรุณาระบุชื่อ-นามสกุลและสาขาวิชา/สังกัด', 'danger');
+  // RENDER HEADERS & AVATARS
+  function updateStaffActivityMeter() {
+    const staff = api.getCurrentStaff();
+    const targetHoursText = document.getElementById('targetHoursText');
+    const meterSubtitleText = document.getElementById('meterSubtitleText');
+    const meterPercentText = document.getElementById('meterPercentText');
+    const meterFillBar = document.getElementById('meterFillBar');
+    const meterEarnedText = document.getElementById('meterEarnedText');
+    const meterRemainingText = document.getElementById('meterRemainingText');
+    const summaryEarnedHours = document.getElementById('summaryEarnedHours');
+    const summaryPendingHours = document.getElementById('summaryPendingHours');
+    const summaryRegisteredCount = document.getElementById('summaryRegisteredCount');
+
+    if (!staff) {
+      // LOGGED OUT / GUEST STATE: Do NOT display numbers or target hours
+      if (targetHoursText) targetHoursText.textContent = '-';
+      if (meterSubtitleText) meterSubtitleText.textContent = 'เป้าหมายปีงบประมาณ 2026: - ชั่วโมงกิจกรรม';
+      if (meterPercentText) meterPercentText.textContent = '-';
+      if (meterFillBar) meterFillBar.style.width = '0%';
+      if (meterEarnedText) meterEarnedText.textContent = 'สะสมแล้ว - / - ชั่วโมง';
+      if (meterRemainingText) meterRemainingText.textContent = 'กรุณาเข้าสู่ระบบเพื่อดูข้อมูล';
+
+      if (summaryEarnedHours) summaryEarnedHours.textContent = '-';
+      if (summaryPendingHours) summaryPendingHours.textContent = '-';
+      if (summaryRegisteredCount) summaryRegisteredCount.textContent = '-';
       return;
     }
 
-    store.addWorker(data);
-    ui.showToast(`เพิ่มผู้ปฏิบัติงาน "${data.name}" เรียบร้อยแล้ว`, 'success');
-    closeModal('worker-form-modal');
-    populateUserDropdown();
-    renderAdminRoster();
+    // LOGGED IN STATE: Calculate numbers dynamically for the logged-in staff
+    const staffId = staff.studentId;
+    const target = Number(staff.targetHours) || 200;
+
+    // Filter registrations for logged in staff
+    const userRegs = currentRegistrations.filter(r => String(r.staffId) === String(staffId));
+
+    // Earned (approved) hours
+    const earned = userRegs
+      .filter(r => r.status === 'approved')
+      .reduce((sum, r) => sum + (Number(r.earnedHours || r.hours) || 0), 0);
+
+    // Pending hours
+    const pending = userRegs
+      .filter(r => r.status === 'pending')
+      .reduce((sum, r) => sum + (Number(r.hours) || 0), 0);
+
+    const remaining = Math.max(0, target - earned);
+    const percent = Math.min(100, Math.round((earned / target) * 100));
+
+    if (targetHoursText) targetHoursText.textContent = target;
+    if (meterSubtitleText) meterSubtitleText.textContent = `เป้าหมายปีงบประมาณ 2026: ${target} ชั่วโมงกิจกรรม`;
+    if (meterPercentText) meterPercentText.textContent = `${percent}%`;
+    if (meterFillBar) meterFillBar.style.width = `${percent}%`;
+    if (meterEarnedText) meterEarnedText.textContent = `สะสมแล้ว ${earned} / ${target} ชั่วโมง`;
+    if (meterRemainingText) meterRemainingText.textContent = `ขาดอีก ${remaining} ชั่วโมง`;
+
+    if (summaryEarnedHours) summaryEarnedHours.textContent = earned;
+    if (summaryPendingHours) summaryPendingHours.textContent = pending;
+    if (summaryRegisteredCount) summaryRegisteredCount.textContent = userRegs.length;
+  }
+
+  function renderStaffHeaderInfo() {
+    const staff = api.getCurrentStaff();
+    const staffLoggedOutHero = document.getElementById('staffLoggedOutHero');
+    const staffLoggedInHero = document.getElementById('staffLoggedInHero');
+
+    updateStaffActivityMeter();
+
+    if (!staff) {
+      // LOGGED OUT STATE
+      if (staffLoggedOutHero) staffLoggedOutHero.style.display = 'flex';
+      if (staffLoggedInHero) staffLoggedInHero.style.display = 'none';
+
+      if (navUserName) navUserName.textContent = 'กรุณาเข้าสู่ระบบ';
+      if (navUserCode) navUserCode.textContent = '';
+      if (navUserAvatar) navUserAvatar.innerHTML = '<i class="fa-solid fa-user-slash"></i>';
+      if (logoutBtn) logoutBtn.textContent = 'เข้าสู่ระบบ';
+      if (historyUserSubtitle) historyUserSubtitle.textContent = '';
+      return;
+    }
+
+    // LOGGED IN STATE
+    if (staffLoggedOutHero) staffLoggedOutHero.style.display = 'none';
+    if (staffLoggedInHero) staffLoggedInHero.style.display = 'flex';
+    if (logoutBtn) logoutBtn.textContent = 'ออกจากระบบ';
+
+    const directAvatar = convertDriveUrlToDirectLink(staff.avatar);
+    const cleanName = staff.fullName ? staff.fullName.replace(/\s*\([^)]*\)/g, '').trim() : 'ผู้ปฏิบัติงาน';
+
+    if (navUserName) navUserName.textContent = cleanName;
+    if (navUserCode) navUserCode.textContent = `(${staff.studentId})`;
+    if (navUserAvatar) {
+      if (directAvatar) {
+        navUserAvatar.innerHTML = `<img src="${directAvatar}" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">`;
+      } else {
+        navUserAvatar.innerHTML = '<i class="fa-solid fa-user"></i>';
+      }
+    }
+
+    if (staffHeroAvatarBox) {
+      if (directAvatar) {
+        staffHeroAvatarBox.innerHTML = `<img src="${directAvatar}" alt="Avatar" style="width:100%; height:100%; object-fit:cover; border-radius:10px;">`;
+      } else {
+        staffHeroAvatarBox.innerHTML = '<i class="fa-solid fa-user-graduate"></i>';
+      }
+    }
+
+    if (staffFullName) staffFullName.textContent = cleanName;
+    if (staffCodeTag) staffCodeTag.textContent = staff.studentId;
+    if (staffMajor) staffMajor.textContent = staff.major || 'ภาษาอังกฤษเพื่อการสื่อสารธุรกิจ';
+    if (staffYear) staffYear.textContent = staff.year || 'ชั้นปีที่ 3';
+    if (staffDept) staffDept.textContent = `สังกัด: ${staff.department || 'สโมสรนักศึกษา'}`;
+    if (staffPos) staffPos.textContent = `ตำแหน่ง: ${staff.position || 'ประธานฝ่ายกิจกรรม'}`;
+
+    if (historyUserSubtitle) {
+      historyUserSubtitle.textContent = `ผู้ปฏิบัติงาน: ${cleanName} (${staff.studentId}) - ${staff.major}`;
+    }
+  }
+
+  function renderAdminHeaderInfo() {
+    const admin = api.getCurrentAdmin();
+    if (!admin) return;
+
+    if (logoutBtn) logoutBtn.textContent = 'ออกจากระบบ';
+
+    const directAvatar = convertDriveUrlToDirectLink(admin.avatar);
+
+    if (navUserName) navUserName.textContent = admin.fullName;
+    if (navUserCode) navUserCode.textContent = `(${admin.role})`;
+    if (navUserAvatar) {
+      if (directAvatar) {
+        navUserAvatar.innerHTML = `<img src="${directAvatar}" alt="Admin Avatar" style="width:100%; height:100%; object-fit:cover;">`;
+      } else {
+        navUserAvatar.innerHTML = '<i class="fa-solid fa-user-shield" style="color:#2563eb;"></i>';
+      }
+    }
+
+    if (adminHeroAvatarBox) {
+      if (directAvatar) {
+        adminHeroAvatarBox.innerHTML = `<img src="${directAvatar}" alt="Admin Avatar" style="width:100%; height:100%; object-fit:cover; border-radius:10px;">`;
+      } else {
+        adminHeroAvatarBox.innerHTML = '<i class="fa-solid fa-user-shield"></i>';
+      }
+    }
+
+    const adminRoleBadge = document.getElementById('adminRoleBadge');
+    if (adminFullName) adminFullName.textContent = admin.fullName;
+    if (adminRoleBadge) adminRoleBadge.textContent = admin.role || 'Admin';
+    if (adminPosition) adminPosition.textContent = admin.position;
+  }
+
+  // SUBNAV TABS LOGIC
+  tabAllActivities.addEventListener('click', () => {
+    tabAllActivities.classList.add('active');
+    tabMySummary.classList.remove('active');
+    subviewAllActivities.style.display = 'block';
+    subviewMySummary.style.display = 'none';
+    filterAndRenderActivities();
   });
 
-  // Modal 4: Manage Activity Roster & Attendance Approval
-  function showActivityRosterModal(actId) {
-    window._activeRosterActivityId = actId;
-    const act = store.getActivityById(actId);
-    if (!act) return;
+  tabMySummary.addEventListener('click', () => {
+    tabMySummary.classList.add('active');
+    tabAllActivities.classList.remove('active');
+    subviewAllActivities.style.display = 'none';
+    subviewMySummary.style.display = 'block';
+    renderMySummaryView();
+  });
 
-    document.getElementById('roster-modal-act-title').textContent = act.title;
-    document.getElementById('roster-modal-act-subtitle').textContent = `รหัสกิจกรรม: ${act.id} | ชั่วโมงกิจกรรมฐาน: ${act.hours} ชม.`;
+  // MOBILE HAMBURGER MENU (☰) TOGGLE & DRAWER SYNC
+  const mobileMenuToggleBtn = document.getElementById('mobileMenuToggleBtn');
+  const closeMobileDrawerBtn = document.getElementById('closeMobileDrawerBtn');
+  const mobileNavDrawer = document.getElementById('mobileNavDrawer');
+  const mobileNavBackdrop = document.getElementById('mobileNavBackdrop');
+  const drawerRoleStaffBtn = document.getElementById('drawerRoleStaffBtn');
+  const drawerRoleAdminBtn = document.getElementById('drawerRoleAdminBtn');
+  const drawerUserName = document.getElementById('drawerUserName');
+  const drawerUserSub = document.getElementById('drawerUserSub');
+  const drawerLogoutBtn = document.getElementById('drawerLogoutBtn');
+  const drawerGasBtn = document.getElementById('drawerGasBtn');
 
-    const registrations = store.getRegistrations().filter(r => r.activityId === actId && r.status !== 'cancelled');
-    const workers = store.getWorkers();
-    const tbody = document.getElementById('roster-modal-table-body');
+  function openMobileDrawer() {
+    if (mobileNavDrawer && mobileNavBackdrop) {
+      // Sync user profile status into drawer
+      const staff = api.getCurrentStaff();
+      const admin = api.getCurrentAdmin();
+      if (currentRole === 'staff' && staff) {
+        if (drawerUserName) drawerUserName.textContent = staff.fullName;
+        if (drawerUserSub) drawerUserSub.textContent = `รหัส: ${staff.studentId}`;
+        if (drawerLogoutBtn) {
+          drawerLogoutBtn.textContent = 'ออกจากระบบ';
+          drawerLogoutBtn.style.background = '#ef4444';
+        }
+      } else if (currentRole === 'admin' && admin) {
+        if (drawerUserName) drawerUserName.textContent = admin.fullName;
+        if (drawerUserSub) drawerUserSub.textContent = `ตำแหน่ง: ${admin.position || 'แอดมิน'}`;
+        if (drawerLogoutBtn) {
+          drawerLogoutBtn.textContent = 'ออกจากระบบ';
+          drawerLogoutBtn.style.background = '#ef4444';
+        }
+      } else {
+        if (drawerUserName) drawerUserName.textContent = 'กรุณาเข้าสู่ระบบ';
+        if (drawerUserSub) drawerUserSub.textContent = 'สำหรับผู้ปฏิบัติงาน/แอดมิน';
+        if (drawerLogoutBtn) {
+          drawerLogoutBtn.textContent = 'เข้าสู่ระบบ';
+          drawerLogoutBtn.style.background = '#2563eb';
+        }
+      }
 
-    if (registrations.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5" style="text-align:center; padding: 2rem; color:var(--text-muted);">
-            ยังไม่มีผู้ลงทะเบียนเข้าร่วมกิจกรรมนี้
-          </td>
-        </tr>
-      `;
-    } else {
-      tbody.innerHTML = registrations.map((reg, idx) => {
-        const worker = workers.find(w => w.id === reg.workerId) || { name: reg.workerName || 'ไม่ระบุ', nickname: reg.workerNickname || '-', year: reg.workerYear || '-', department: reg.workerDept || '-' };
-        const isCompleted = reg.status === 'completed';
-        const nicknameDisplay = (reg.workerNickname || worker.nickname) && (reg.workerNickname || worker.nickname) !== '-' ? `(${reg.workerNickname || worker.nickname})` : '';
+      // Sync role switcher buttons active state
+      if (drawerRoleStaffBtn && drawerRoleAdminBtn) {
+        if (currentRole === 'staff') {
+          drawerRoleStaffBtn.classList.add('active');
+          drawerRoleAdminBtn.classList.remove('active');
+        } else {
+          drawerRoleAdminBtn.classList.add('active');
+          drawerRoleStaffBtn.classList.remove('active');
+        }
+      }
 
-        return `
+      mobileNavDrawer.classList.add('active');
+      mobileNavBackdrop.classList.add('active');
+    }
+  }
+
+  function closeMobileDrawer() {
+    if (mobileNavDrawer && mobileNavBackdrop) {
+      mobileNavDrawer.classList.remove('active');
+      mobileNavBackdrop.classList.remove('active');
+    }
+  }
+
+  if (mobileMenuToggleBtn) mobileMenuToggleBtn.addEventListener('click', openMobileDrawer);
+  if (closeMobileDrawerBtn) closeMobileDrawerBtn.addEventListener('click', closeMobileDrawer);
+  if (mobileNavBackdrop) mobileNavBackdrop.addEventListener('click', closeMobileDrawer);
+
+  if (drawerRoleStaffBtn) {
+    drawerRoleStaffBtn.addEventListener('click', () => {
+      if (roleStaffBtn) roleStaffBtn.click();
+      closeMobileDrawer();
+    });
+  }
+
+  if (drawerRoleAdminBtn) {
+    drawerRoleAdminBtn.addEventListener('click', () => {
+      if (roleAdminBtn) roleAdminBtn.click();
+      closeMobileDrawer();
+    });
+  }
+
+  if (drawerLogoutBtn) {
+    drawerLogoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeMobileDrawer();
+      if (logoutBtn) logoutBtn.click();
+    });
+  }
+
+  if (drawerGasBtn) {
+    drawerGasBtn.addEventListener('click', () => {
+      closeMobileDrawer();
+      if (gasSettingsModal) gasSettingsModal.classList.add('active');
+    });
+  }
+
+  // DATA INITIALIZATION & LIVE DATA SYNC
+  renderStaffHeaderInfo();
+  await loadAllData(true);
+
+  if (!api.getGasUrl()) {
+    setTimeout(() => {
+      if (gasSettingsModal) {
+        gasUrlInput.value = '';
+        gasSettingsModal.classList.add('active');
+      }
+      showToast('⚠️ กรุณาเชื่อมต่อ Web App URL จาก Google Apps Script เพื่อดึงข้อมูลจริงจาก Google Sheets', 'warning');
+    }, 600);
+  }
+
+  // Silent background auto-sync timer every 30 seconds for multi-user / multi-device live sync
+  setInterval(async () => {
+    await loadAllData(false);
+  }, 30000);
+
+  async function loadAllData(showLoadingModal = false) {
+    const dataLoadingModal = document.getElementById('dataLoadingModal');
+
+    // 1. Instant 0ms UI Render using local cached data
+    currentActivities = api.getActivities();
+    currentRegistrations = api.getRegistrations();
+    
+    renderStaffHeaderInfo();
+    updateStaffHoursStats();
+    filterAndRenderActivities();
+    renderMySummaryView();
+    if (currentRole === 'admin') renderAdminTables();
+
+    // Keep loading modal active while fetching live data from Google Sheets
+    if (showLoadingModal && dataLoadingModal) {
+      dataLoadingModal.classList.add('active');
+    }
+
+    // 2. Fast Parallel Background Live Refresh
+    try {
+      const synced = await api.syncDataFromGoogleSheets();
+      if (synced) {
+        currentActivities = api.getActivities();
+        currentRegistrations = api.getRegistrations();
+        renderStaffHeaderInfo();
+        updateStaffHoursStats();
+        filterAndRenderActivities();
+        renderMySummaryView();
+        if (currentRole === 'admin') renderAdminTables();
+
+        if (showLoadingModal) {
+          showToast('⚡ โหลดและอัปเดตข้อมูลสดจากระบบเรียบร้อยแล้ว', 'success');
+        }
+      }
+    } catch (e) {
+      console.error('Load error:', e);
+    } finally {
+      if (showLoadingModal && dataLoadingModal) {
+        dataLoadingModal.classList.remove('active');
+      }
+    }
+  }
+
+  function updateStaffHoursStats() {
+    const staff = api.getCurrentStaff();
+    if (!staff) {
+      if (myRegCountBadge) myRegCountBadge.textContent = '0';
+      if (accumulatedHours) accumulatedHours.textContent = '0';
+      if (pendingHours) pendingHours.textContent = '0';
+      return;
+    }
+
+    const myRegs = currentRegistrations.filter(r => r.staffId === staff.studentId);
+    if (myRegCountBadge) myRegCountBadge.textContent = myRegs.length;
+
+    let earned = 0;
+    let pending = 0;
+
+    myRegs.forEach(r => {
+      if (r.status === 'approved') {
+        earned += (r.earnedHours || r.baseHours || 3);
+      } else if (r.status === 'pending') {
+        pending += (r.baseHours || 3);
+      }
+    });
+
+    if (accumulatedHours) accumulatedHours.textContent = earned;
+    if (pendingHours) pendingHours.textContent = pending;
+  }
+
+  function renderMySummaryView() {
+    const staff = api.getCurrentStaff();
+    if (!staff) {
+      if (summaryEarnedHours) summaryEarnedHours.textContent = '0';
+      if (summaryPendingHours) summaryPendingHours.textContent = '0';
+      if (summaryRegisteredCount) summaryRegisteredCount.textContent = '0';
+      if (meterPercentText) meterPercentText.textContent = '0%';
+      if (meterFillBar) meterFillBar.style.width = '0%';
+      if (meterEarnedText) meterEarnedText.textContent = 'สะสมแล้ว 0 / 200 ชั่วโมง';
+      if (meterRemainingText) meterRemainingText.textContent = 'กรุณาเข้าสู่ระบบ';
+      if (historyTableBody) {
+        historyTableBody.innerHTML = `
           <tr>
-            <td style="text-align:center; font-weight:600;">${idx + 1}</td>
-            <td>
-              <strong style="display:block; color:var(--text-main);">${reg.workerName || worker.name} <span style="color:var(--primary); font-size:0.85rem;">${nicknameDisplay}</span></strong>
-              <small style="color:var(--text-muted);">รหัสนักศึกษา: ${reg.studentId || reg.workerId}</small>
-            </td>
-            <td>
-              <span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem; padding:2px 6px; border-radius:4px; margin-bottom:2px; display:inline-block;">${reg.workerYear || worker.year || 'ชั้นปีที่ 1'}</span>
-              <div style="font-size:0.85rem; font-weight:500; color:var(--text-main);">${reg.workerDept || worker.department || '-'}</div>
-            </td>
-            <td style="text-align:center;">
-              <input type="number" class="form-control roster-hours-input" data-reg-id="${reg.id}" value="${isCompleted ? reg.hoursGranted : act.hours}" min="0" max="50" step="0.5" style="width:70px; text-align:center; margin:0 auto;">
-            </td>
-            <td style="text-align:center;">
-              <div style="display:flex; gap:6px; justify-content:center;">
-                <button class="btn ${isCompleted ? 'btn-success' : 'btn-outline'} btn-sm approve-hours-btn" data-reg-id="${reg.id}">
-                  ${isCompleted ? '✔ อนุมัติแล้ว' : 'อนุมัติชั่วโมง'}
-                </button>
-                <button class="btn btn-ghost btn-sm mark-absent-btn" data-reg-id="${reg.id}" style="color:var(--danger);" title="ทำเครื่องหมายว่าไม่ได้เข้าร่วม">
-                  ✖ ขาด
+            <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--text-gray);">
+              <i class="fa-solid fa-lock" style="font-size: 2rem; margin-bottom: 0.5rem; color: #cbd5e1; display: block;"></i>
+              <strong>กรุณาเข้าสู่ระบบผู้ปฏิบัติงานเพื่อดูสรุปชั่วโมงกิจกรรมและประวัติสะสมชั่วโมงส่วนบุคคล</strong>
+              <div style="margin-top: 1rem;">
+                <button class="btn-register" onclick="document.getElementById('staffLoginModal').classList.add('active')" style="display: inline-flex; width: auto; padding: 0.5rem 1.25rem;">
+                  <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบด้วยรหัสนักศึกษา
                 </button>
               </div>
             </td>
           </tr>
         `;
-      }).join('');
-
-      // Attach Attendance Event Listeners
-      tbody.querySelectorAll('.approve-hours-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const regId = (e.currentTarget || e.target.closest('[data-reg-id]')).getAttribute('data-reg-id');
-          const hoursInput = tbody.querySelector(`.roster-hours-input[data-reg-id="${regId}"]`);
-          const hoursToGrant = parseFloat(hoursInput.value) || act.hours;
-
-          store.updateAttendance(regId, 'completed', hoursToGrant, 'ผ่านการอนุมัติชั่วโมงโดยเจ้าหน้าที่');
-          ui.showToast('บันทึกการอนุมัติชั่วโมงกิจกรรมเรียบร้อยแล้ว', 'success');
-          refreshHeaderProfile();
-          showActivityRosterModal(actId);
-        });
-      });
-
-      tbody.querySelectorAll('.mark-absent-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const regId = (e.currentTarget || e.target.closest('[data-reg-id]')).getAttribute('data-reg-id');
-          store.updateAttendance(regId, 'absent', 0, 'ไม่ได้เข้าร่วมกิจกรรม');
-          ui.showToast('บันทึกสถานะไม่ได้เข้าร่วมกิจกรรม', 'info');
-          refreshHeaderProfile();
-          showActivityRosterModal(actId);
-        });
-      });
-    }
-
-    openModal('activity-roster-modal');
-  }
-
-  // Modal 5: Manual Register Worker to Activity
-  const manualRegisterForm = document.getElementById('manual-register-form');
-  const manualRegActSelect = document.getElementById('manual-reg-act-select');
-
-  function showManualRegisterModal(workerId) {
-    const worker = store.getWorkers().find(w => w.id === workerId);
-    if (!worker) return;
-
-    document.getElementById('manual-reg-worker-id').value = workerId;
-    document.getElementById('manual-reg-worker-info').innerHTML = `
-      เพิ่มกิจกรรมให้ผู้ปฏิบัติงาน: <strong>${worker.name} (${worker.id})</strong> - ${worker.department}
-    `;
-
-    const openActivities = store.getActivities().filter(a => a.status === 'open');
-    manualRegActSelect.innerHTML = openActivities.map(a => `
-      <option value="${a.id}">
-        ${a.title} (${a.hours} ชม.) - เหลือที่นั่ง ${a.maxCapacity - a.registeredCount} คน
-      </option>
-    `).join('');
-
-    openModal('manual-register-modal');
-  }
-
-  manualRegisterForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const workerId = document.getElementById('manual-reg-worker-id').value;
-    const actId = manualRegActSelect.value;
-
-    try {
-      store.registerWorker(workerId, actId);
-      ui.showToast('เพิ่มผู้ปฏิบัติงานเข้าร่วมกิจกรรมเรียบร้อยแล้ว', 'success');
-      closeModal('manual-register-modal');
-      refreshHeaderProfile();
-      renderAdminRoster();
-    } catch (err) {
-      ui.showToast(err.message, 'danger');
-    }
-  });
-
-  // Reset Data Handler
-  if (resetDataBtn) {
-    resetDataBtn.addEventListener('click', () => {
-      if (confirm('คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นตัวอย่างใช่หรือไม่?')) {
-        store.resetToDefault();
-        ui.showToast('รีเซ็ตข้อมูลตัวอย่างทั้งหมดเรียบร้อยแล้ว', 'info');
-        initApp();
       }
-    });
-  }
-
-  // Export CSV Handler
-  const exportCsvBtn = document.getElementById('export-csv-btn');
-  if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', () => {
-      exportReportCSV();
-    });
-  }
-
-  function exportReportCSV() {
-    const workers = store.getWorkers();
-    let csvContent = "\uFEFF"; // UTF-8 BOM for Excel support
-    csvContent += "รหัสนักศึกษา/รหัสผู้ปฏิบัติงาน,ชื่อ-นามสกุล,ชื่อเล่น,ชั้นปี,สาขาวิชา/สังกัด,ตำแหน่ง,ชั่วโมงสะสม,เป้าหมายชั่วโมง,สถานะเกณฑ์\n";
-
-    workers.forEach(w => {
-      const summary = store.getWorkerSummary(w.id);
-      const isTargetMet = summary.completedHours >= summary.targetHours ? 'ผ่านเกณฑ์' : 'ยังไม่ครบเกณฑ์';
-      csvContent += `"${w.id}","${w.name}","${w.nickname || '-'}","${w.year || 'ชั้นปีที่ 1'}","${w.department}","${w.position}",${summary.completedHours},${summary.targetHours},"${isTargetMet}"\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `smo_staff_hours_summary_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    ui.showToast('ส่งออกข้อมูลรายงาน CSV เรียบร้อยแล้ว', 'success');
-  }
-
-  // --------------------------------------------------------------------------
-  // 8. Excel / CSV Roster Import System
-  // --------------------------------------------------------------------------
-  let pendingImportWorkers = [];
-
-  const triggerImportExcelBtn = document.getElementById('trigger-import-excel-btn');
-  const browseFileBtn = document.getElementById('browse-file-btn');
-  const importFileInput = document.getElementById('import-file-input');
-  const downloadTemplateCsvBtn = document.getElementById('download-template-csv-btn');
-  const modalDownloadTemplateBtn = document.getElementById('modal-download-template-btn');
-  const confirmImportBtn = document.getElementById('confirm-import-btn');
-  const importPreviewSection = document.getElementById('import-preview-section');
-  const importPreviewCount = document.getElementById('import-preview-count');
-  const importPreviewTbody = document.getElementById('import-preview-tbody');
-
-  if (triggerImportExcelBtn) {
-    triggerImportExcelBtn.addEventListener('click', () => {
-      if (!store.isAdminAuthenticated()) {
-        ui.showToast('กรุณาเข้าสู่ระบบเจ้าหน้าที่ก่อนใช้งานฟังก์ชันนำเข้ารายชื่อ', 'info');
-        document.getElementById('admin-password').value = '';
-        openModal('admin-login-modal');
-        return;
-      }
-      resetImportState();
-      openModal('excel-import-modal');
-    });
-  }
-
-  function resetImportState() {
-    pendingImportWorkers = [];
-    if (importFileInput) importFileInput.value = '';
-    if (importPreviewSection) importPreviewSection.style.display = 'none';
-    if (confirmImportBtn) {
-      confirmImportBtn.disabled = true;
-      confirmImportBtn.classList.add('btn-disabled');
-    }
-  }
-
-  if (browseFileBtn && importFileInput) {
-    browseFileBtn.addEventListener('click', () => importFileInput.click());
-    importFileInput.addEventListener('change', handleImportFileSelect);
-  }
-
-  function downloadRosterTemplateCSV() {
-    let template = "\uFEFF"; // UTF-8 BOM
-    template += "รหัสนักศึกษา,ชื่อ-นามสกุล,ชื่อเล่น,ชั้นปี,สาขาวิชา/สังกัด,ตำแหน่ง,อีเมล,เป้าหมายชั่วโมง\n";
-    template += "663450012-3,นายเกียรติศักดิ์ มีสุข,กิ๊ก,ชั้นปีที่ 2,สาขาวิชาเทคโนโลยีสารสนเทศ,ฝ่ายวิชาการ,kiattisak.m@org.mail,30\n";
-    template += "673450099-1,นางสาวนภาพร เจริญยิ่ง,ส้ม,ชั้นปีที่ 1,สาขาวิชาวิทยาการคอมพิวเตอร์,ฝ่ายสื่อสารองค์กร,napaporn.c@org.mail,30\n";
-
-    const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'smo_staff_roster_template.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    ui.showToast('ดาวน์โหลดไฟล์แม่แบบ CSV เรียบร้อยแล้ว', 'success');
-  }
-
-  if (downloadTemplateCsvBtn) downloadTemplateCsvBtn.addEventListener('click', downloadRosterTemplateCSV);
-  if (modalDownloadTemplateBtn) modalDownloadTemplateBtn.addEventListener('click', downloadRosterTemplateCSV);
-
-  function handleImportFileSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (evt) {
-      const text = evt.target.result;
-      parseCSVText(text);
-    };
-    reader.readAsText(file, 'UTF-8');
-  }
-
-  function parseCSVText(text) {
-    const lines = text.split(/\r\n|\n/);
-    if (lines.length <= 1) {
-      ui.showToast('ไฟล์ที่เลือกไม่มีข้อมูล หรือรูปแบบไม่ถูกต้อง', 'danger');
       return;
     }
 
-    pendingImportWorkers = [];
-    // Skip header line if present
-    const startIndex = (lines[0].includes('รหัส') || lines[0].includes('name') || lines[0].includes('ID')) ? 1 : 0;
+    const myRegs = currentRegistrations.filter(r => r.staffId === staff.studentId);
 
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-
-      // Handle quotes & comma splitting
-      const cols = line.split(',').map(c => c.replace(/^["']|["']$/g, '').trim());
-
-      if (cols.length >= 2 && cols[0] && cols[1]) {
-        const hasNick = cols.length >= 4;
-        pendingImportWorkers.push({
-          id: cols[0],
-          name: cols[1],
-          nickname: hasNick ? cols[2] : '-',
-          year: hasNick ? cols[3] : 'ชั้นปีที่ 1',
-          department: cols[hasNick ? 4 : 2] || 'ไม่ระบุสาขา',
-          position: cols[hasNick ? 5 : 3] || 'ผู้ปฏิบัติงาน',
-          email: cols[hasNick ? 6 : 4] || `${cols[0].toLowerCase()}@org.mail`,
-          targetHours: parseInt(cols[hasNick ? 7 : 5]) || 30
-        });
-      }
-    }
-
-    if (pendingImportWorkers.length === 0) {
-      ui.showToast('ไม่สามารถอ่านข้อมูลผู้ปฏิบัติงานจากไฟล์ได้ กรุณาตรวจสอบรูปแบบไฟล์', 'danger');
-      return;
-    }
-
-    // Render Preview Table
-    importPreviewCount.textContent = pendingImportWorkers.length;
-    importPreviewTbody.innerHTML = pendingImportWorkers.map(w => `
-      <tr>
-        <td><strong>${w.id}</strong></td>
-        <td>${w.name}</td>
-        <td>${w.department}</td>
-        <td>${w.position}</td>
-        <td style="text-align:center;">${w.targetHours} ชม.</td>
-      </tr>
-    `).join('');
-
-    importPreviewSection.style.display = 'block';
-    confirmImportBtn.disabled = false;
-    confirmImportBtn.classList.remove('btn-disabled');
-    ui.showToast(`พบข้อมูลผู้ปฏิบัติงานทั้งหมด ${pendingImportWorkers.length} รายการ`, 'info');
-  }
-
-  if (confirmImportBtn) {
-    confirmImportBtn.addEventListener('click', () => {
-      if (pendingImportWorkers.length === 0) return;
-
-      const count = store.importWorkersBatch(pendingImportWorkers);
-      closeModal('excel-import-modal');
-      renderAdminRoster();
-      ui.showToast(`🎉 นำเข้ารายชื่อผู้ปฏิบัติงานสำเร็จแล้ว ${count} รายการ!`, 'success');
+    let earned = 0;
+    let pending = 0;
+    myRegs.forEach(r => {
+      if (r.status === 'approved') earned += (r.earnedHours || r.baseHours || 3);
+      else if (r.status === 'pending') pending += (r.baseHours || 3);
     });
-  }
 
-  // --------------------------------------------------------------------------
-  // 9. Admin Account Management System
-  // --------------------------------------------------------------------------
-  const adminAddOfficerBtn = document.getElementById('admin-add-officer-btn');
-  const adminViewOfficersBtn = document.getElementById('admin-view-officers-btn');
-  const addAdminForm = document.getElementById('add-admin-form');
-  const adminListTbody = document.getElementById('admin-list-tbody');
+    const regCount = myRegs.length;
+    const target = staff.targetHours || 200;
+    const percent = Math.min(100, Math.round((earned / target) * 100));
+    const remaining = Math.max(0, target - earned);
 
-  if (adminAddOfficerBtn) {
-    adminAddOfficerBtn.addEventListener('click', () => {
-      if (!store.isAdminAuthenticated()) {
-        ui.showToast('กรุณาเข้าสู่ระบบเจ้าหน้าที่ก่อนจัดการแอดมิน', 'info');
-        document.getElementById('admin-password').value = '';
-        openModal('admin-login-modal');
-        return;
-      }
-      if (addAdminForm) addAdminForm.reset();
-      openModal('add-admin-modal');
-    });
-  }
+    if (summaryEarnedHours) summaryEarnedHours.textContent = earned;
+    if (summaryPendingHours) summaryPendingHours.textContent = pending;
+    if (summaryRegisteredCount) summaryRegisteredCount.textContent = regCount;
 
-  if (addAdminForm) {
-    addAdminForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const username = document.getElementById('new-admin-username').value.trim();
-      const password = document.getElementById('new-admin-password').value.trim();
-      const name = document.getElementById('new-admin-name').value.trim();
-      const department = document.getElementById('new-admin-dept').value.trim();
-      const role = document.getElementById('new-admin-role').value;
+    if (meterPercentText) meterPercentText.textContent = `${percent}%`;
+    if (meterFillBar) meterFillBar.style.width = `${Math.max(1, percent)}%`;
+    if (meterEarnedText) meterEarnedText.textContent = `สะสมแล้ว ${earned} / ${target} ชั่วโมง`;
+    if (meterRemainingText) meterRemainingText.textContent = `ขาดอีก ${remaining} ชั่วโมง`;
 
-      try {
-        const newAdmin = store.addAdmin({ username, password, name, department, role });
-        closeModal('add-admin-modal');
-        ui.showToast(`🔑 สร้างบัญชีแอดมิน "${newAdmin.name}" (${newAdmin.username}) เรียบร้อยแล้ว`, 'success');
-      } catch (err) {
-        ui.showToast(err.message, 'danger');
-      }
-    });
-  }
+    if (!historyTableBody) return;
+    historyTableBody.innerHTML = '';
 
-  if (adminViewOfficersBtn) {
-    adminViewOfficersBtn.addEventListener('click', () => {
-      if (!store.isAdminAuthenticated()) {
-        ui.showToast('กรุณาเข้าสู่ระบบเจ้าหน้าที่ก่อนดูรายชื่อแอดมิน', 'info');
-        document.getElementById('admin-password').value = '';
-        openModal('admin-login-modal');
-        return;
-      }
-      renderAdminAccountsList();
-      openModal('admin-list-modal');
-    });
-  }
-
-  const editAdminForm = document.getElementById('edit-admin-form');
-
-  if (editAdminForm) {
-    editAdminForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const username = document.getElementById('edit-admin-username').value;
-      const name = document.getElementById('edit-admin-name').value.trim();
-      const department = document.getElementById('edit-admin-dept').value.trim();
-      const role = document.getElementById('edit-admin-role').value;
-      const password = document.getElementById('edit-admin-password').value;
-
-      try {
-        store.updateAdmin(username, { name, department, role, password });
-        closeModal('edit-admin-modal');
-        renderAdminAccountsList();
-        ui.showToast(`อัปเดตข้อมูลแอดมิน "${name}" เรียบร้อยแล้ว`, 'success');
-      } catch (err) {
-        ui.showToast(err.message, 'danger');
-      }
-    });
-  }
-
-  function renderAdminAccountsList() {
-    const admins = store.getAdmins();
-    if (!adminListTbody) return;
-
-    if (admins.length === 0) {
-      adminListTbody.innerHTML = `
+    if (myRegs.length === 0) {
+      historyTableBody.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
-            ไม่พบรายชื่อแอดมินในระบบ
+          <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-gray);">
+            <i class="fa-regular fa-folder-open" style="font-size: 1.8rem; color: #cbd5e1; margin-bottom: 0.5rem; display: block;"></i>
+            ยังไม่มีประวัติการลงทะเบียนกิจกรรม
           </td>
         </tr>
       `;
       return;
     }
 
-    adminListTbody.innerHTML = admins.map((a, idx) => `
-      <tr>
-        <td style="text-align:center; font-weight:600;">${idx + 1}</td>
-        <td>
-          <strong style="color:var(--admin-accent); display:block;">${a.name}</strong>
-          <small style="color:var(--text-muted);">Username: ${a.username}</small>
-        </td>
-        <td>${a.department || '-'}</td>
-        <td style="text-align:center;">
-          <span class="status-badge ${a.role === 'Super Admin' ? 'completed' : 'registered'}">
-            ${a.role}
-          </span>
-        </td>
-        <td style="text-align:center; font-size:0.85rem; color:var(--text-muted);">${a.createdAt || '-'}</td>
-        <td style="text-align:center;">
-          <div style="display:flex; gap:4px; justify-content:center;">
-            <button class="btn btn-ghost btn-sm admin-edit-btn" data-username="${a.username}" title="แก้ไขข้อมูล">✏️</button>
-            <button class="btn btn-ghost btn-sm admin-delete-btn" data-username="${a.username}" style="color:var(--danger);" title="ลบบัญชี">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
-
-    // Attach Edit Listeners
-    adminListTbody.querySelectorAll('.admin-edit-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const username = (e.currentTarget || e.target.closest('[data-username]')).getAttribute('data-username');
-        const adminObj = store.getAdmins().find(a => a.username.toLowerCase() === username.toLowerCase());
-        if (!adminObj) return;
-
-        document.getElementById('edit-admin-username').value = adminObj.username;
-        document.getElementById('edit-admin-name').value = adminObj.name;
-        document.getElementById('edit-admin-dept').value = adminObj.department || '';
-        document.getElementById('edit-admin-role').value = adminObj.role || 'Officer';
-        document.getElementById('edit-admin-password').value = '';
-
-        openModal('edit-admin-modal');
-      });
+    myRegs.forEach((r, idx) => {
+      const isApproved = r.status === 'approved';
+      const tr = `
+        <tr>
+          <td><strong>${idx + 1}</strong></td>
+          <td>
+            <div style="font-weight:700; color:var(--text-dark);">${r.activityTitle}</div>
+            <div style="font-size:0.75rem; color:var(--text-gray); font-family:'Space Grotesk', monospace;">${r.department || 'สโมสรนักศึกษา'} | ${r.regId}</div>
+          </td>
+          <td>${r.timestamp}</td>
+          <td>${r.baseHours || 3} ชม.</td>
+          <td><strong style="color:${isApproved ? 'var(--success-green)' : 'var(--text-dark)'}">${isApproved ? (r.earnedHours || r.baseHours || 3) + ' ชม.' : '0 ชม.'}</strong></td>
+          <td><span class="${isApproved ? 'status-tag-checked' : 'status-tag-pending'}">${isApproved ? 'อนุมัติแล้ว' : 'รออนุมัติชั่วโมง'}</span></td>
+          <td>
+            <button class="role-pill-btn cancel-hist-reg-btn" data-reg-id="${r.regId}" data-act-id="${r.activityId}" style="background:#ef4444; color:white; padding:0.25rem 0.6rem; font-size:0.75rem;"><i class="fa-solid fa-user-xmark"></i> ยกเลิก</button>
+          </td>
+        </tr>
+      `;
+      historyTableBody.insertAdjacentHTML('beforeend', tr);
     });
 
-    // Attach Delete Listeners
-    adminListTbody.querySelectorAll('.admin-delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const username = (e.currentTarget || e.target.closest('[data-username]')).getAttribute('data-username');
-        const adminObj = store.getAdmins().find(a => a.username.toLowerCase() === username.toLowerCase());
-        const adminName = adminObj ? adminObj.name : username;
+    // Attach History Table Cancel Registration Listener
+    document.querySelectorAll('.cancel-hist-reg-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const regId = e.currentTarget.getAttribute('data-reg-id');
+        const actId = e.currentTarget.getAttribute('data-act-id');
+        const act = currentActivities.find(a => a.id === actId);
 
-        if (confirm(`คุณต้องการลบบัญชีแอดมิน "${adminName}" (${username}) ใช่หรือไม่?`)) {
-          try {
-            store.deleteAdmin(username);
-            renderAdminAccountsList();
-            ui.showToast(`ลบบัญชีแอดมิน "${adminName}" เรียบร้อยแล้ว`, 'info');
-          } catch (err) {
-            ui.showToast(err.message, 'danger');
+        if (confirm(`คุณต้องการยกเลิกการลงทะเบียนกิจกรรมนี้ใช่หรือไม่?\n(รายชื่อและข้อมูลจะถูกลบออกจากฐานข้อมูล Google Sheets อัตโนมัติ)`)) {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังยกเลิก...';
+
+          api.deleteRegistration(regId);
+
+          if (act) {
+            act.registeredCount = Math.max(0, (act.registeredCount || 1) - 1);
+            if (act.status === 'full' && act.registeredCount < act.maxQuota) {
+              act.status = 'open';
+            }
+            api.updateActivity(act.id, act);
           }
+
+          showToast('ยกเลิกการลงทะเบียนเรียบร้อยแล้ว รายชื่อถูกลบออกจากฐานข้อมูลแล้ว', 'success');
+          await loadAllData();
+          autoDriveBackup('cancel_registration');
         }
       });
     });
   }
 
-  // --------------------------------------------------------------------------
-  // 10. Google Sheets Integration System
-  // --------------------------------------------------------------------------
-  const adminGoogleSheetSettingsBtn = document.getElementById('admin-google-sheet-settings-btn');
-  const sheetsUrlInput = document.getElementById('sheets-url-input');
-  const saveSheetsUrlBtn = document.getElementById('save-sheets-url-btn');
-  const manualSyncSheetsBtn = document.getElementById('manual-sync-sheets-btn');
-  const manualFetchSheetsBtn = document.getElementById('manual-fetch-sheets-btn');
-  const copyGasCodeBtn = document.getElementById('copy-gas-code-btn');
+  // SEARCH & FILTER ACTIVITIES
+  if (searchInput) searchInput.addEventListener('input', filterAndRenderActivities);
+  if (statusFilter) statusFilter.addEventListener('change', filterAndRenderActivities);
 
-  if (adminGoogleSheetSettingsBtn) {
-    adminGoogleSheetSettingsBtn.addEventListener('click', () => {
-      if (!store.isAdminAuthenticated()) {
-        ui.showToast('กรุณาเข้าสู่ระบบเจ้าหน้าที่ก่อนจัดการการเชื่อมต่อ Google Sheets', 'info');
-        document.getElementById('admin-password').value = '';
-        openModal('admin-login-modal');
+  function filterAndRenderActivities() {
+    if (!activitiesGrid) return;
+    activitiesGrid.innerHTML = '';
+
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    const stat = statusFilter ? statusFilter.value : '';
+
+    let list = [...currentActivities];
+
+    // SORT BY NEAREST DATE FIRST (Ascending order of activity date YYYY-MM-DD)
+    list.sort((a, b) => {
+      const timeA = a.date ? new Date(a.date.trim()).getTime() : 9999999999999;
+      const timeB = b.date ? new Date(b.date.trim()).getTime() : 9999999999999;
+      return timeA - timeB;
+    });
+
+    if (query) {
+      list = list.filter(a => a.title.toLowerCase().includes(query) || a.location.toLowerCase().includes(query) || a.id.toLowerCase().includes(query));
+    }
+    if (stat) {
+      list = list.filter(a => a.status === stat);
+    }
+
+    if (list.length === 0) {
+      if (currentActivities.length === 0) {
+        activitiesGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-gray); padding: 3.5rem 1rem; background: #fff; border-radius: 12px; border: 1px solid var(--border-light);"><i class="fa-solid fa-arrows-rotate fa-spin" style="font-size: 2.2rem; margin-bottom: 0.85rem; color: #2563eb;"></i><p style="font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 0.35rem;">กำลังเชื่อมต่อและดึงข้อมูลสดจากระบบ...</p><small style="color: var(--text-gray);">กรุณารอสักครู่ ระบบกำลังโหลดรายการกิจกรรมและข้อมูลล่าสุดจาก Google Sheets</small></div>`;
+      } else {
+        activitiesGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-gray); padding: 3rem; background: #fff; border-radius: 12px; border: 1px solid var(--border-light);"><i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 0.75rem; color: #cbd5e1;"></i><p>ไม่พบรายการกิจกรรมตามเงื่อนไขที่ค้นหา</p></div>`;
+      }
+      return;
+    }
+
+    const staff = api.getCurrentStaff();
+
+    list.forEach(act => {
+      const realRegCount = currentRegistrations.filter(r => r.activityId === act.id).length;
+      act.registeredCount = realRegCount;
+      const isFull = act.registeredCount >= act.maxQuota || act.status === 'full';
+      const isClosed = act.status === 'closed';
+      const isRegistered = staff ? currentRegistrations.some(r => r.staffId === staff.studentId && r.activityId === act.id) : false;
+
+      let badgeClass = 'badge-open';
+      let badgeText = 'เปิดรับลงทะเบียน';
+      if (isClosed) { badgeClass = 'badge-closed'; badgeText = '🔴 ปิดรับสมัครแล้ว'; }
+      else if (isFull) { badgeClass = 'badge-full'; badgeText = 'เต็มจำนวน'; }
+
+      const directBannerUrl = convertDriveUrlToDirectLink(act.banner) || 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80';
+
+      const cardHtml = `
+        <div class="activity-card">
+          <div class="card-banner act-click-trigger" data-act-id="${act.id}" style="background-image: url('${directBannerUrl}'); cursor: pointer;" title="คลิกเพื่อดูรายละเอียดและป้ายภาพกิจกรรมแบบเต็ม">
+            <div class="card-banner-overlay"></div>
+            <div class="card-badge ${badgeClass}">${badgeText}</div>
+            <div class="hours-credit-badge"><i class="fa-solid fa-clock"></i> +${act.hours || 3} ชม.สะสม</div>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title act-click-trigger" data-act-id="${act.id}" style="cursor: pointer;" title="คลิกเพื่อดูรายละเอียดและรูปภาพแบบเต็ม">${act.title}</h3>
+            <p style="font-size: 0.85rem; color: var(--text-gray); line-height: 1.4;">${act.description}</p>
+            <div class="card-info">
+              <div class="info-item"><i class="fa-regular fa-calendar-check"></i> วันที่: ${act.date}</div>
+              <div class="info-item"><i class="fa-regular fa-clock"></i> เวลา: ${act.time}</div>
+              <div class="info-item"><i class="fa-solid fa-location-dot"></i> สถานที่: ${act.location}</div>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-gray); display: flex; justify-content: space-between; margin-top: 0.25rem;">
+              <span>ยอดลงทะเบียน:</span>
+              <span><strong>${act.registeredCount}</strong> / ${act.maxQuota} คน</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            ${isRegistered ? `
+              <button class="btn-register cancel-reg-btn" data-act-id="${act.id}" style="background: #ef4444; color: white;">
+                <i class="fa-solid fa-user-xmark"></i> ยกเลิกการลงทะเบียน
+              </button>
+            ` : `
+              <button class="btn-register open-reg-modal-btn" 
+                data-id="${act.id}" 
+                data-title="${act.title}"
+                data-hours="${act.hours || 3}"
+                ${isFull || isClosed ? 'disabled style="background: #64748b; cursor: not-allowed; opacity: 0.8;"' : ''}>
+                ${isClosed ? '<i class="fa-solid fa-lock"></i> ปิดรับสมัครแล้ว' : isFull ? 'โควตาเต็มแล้ว' : '<i class="fa-solid fa-pen-to-square"></i> ลงทะเบียนเข้าร่วม'}
+              </button>
+            `}
+          </div>
+        </div>
+      `;
+      activitiesGrid.insertAdjacentHTML('beforeend', cardHtml);
+    });
+
+    // Attach Click Event to Card Image Banner & Title for Full Detail Modal
+    document.querySelectorAll('.act-click-trigger').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const actId = e.currentTarget.getAttribute('data-act-id');
+        openActivityDetailModal(actId);
+      });
+    });
+
+    // Attach Cancel Registration Event on Card
+    document.querySelectorAll('.cancel-reg-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const staff = api.getCurrentStaff();
+        if (!staff) return;
+        const actId = e.currentTarget.getAttribute('data-act-id');
+        const act = currentActivities.find(a => a.id === actId);
+        const reg = currentRegistrations.find(r => r.staffId === staff.studentId && r.activityId === actId);
+
+        if (!reg) return;
+
+        if (confirm(`คุณต้องการยกเลิกการลงทะเบียนกิจกรรม "${act ? act.title : ''}" ใช่หรือไม่?\n(รายชื่อและข้อมูลจะถูกลบออกจากฐานข้อมูล Google Sheets อัตโนมัติ)`)) {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังยกเลิก...';
+
+          api.deleteRegistration(reg.regId);
+
+          if (act) {
+            act.registeredCount = Math.max(0, (act.registeredCount || 1) - 1);
+            if (act.status === 'full' && act.registeredCount < act.maxQuota) {
+              act.status = 'open';
+            }
+            api.updateActivity(act.id, act);
+          }
+
+          showToast('ยกเลิกการลงทะเบียนกิจกรรมสำเร็จแล้ว รายชื่อถูกลบออกจากฐานข้อมูลเรียบร้อย', 'success');
+          await loadAllData();
+          autoDriveBackup('cancel_registration');
+        }
+      });
+    });
+
+    document.querySelectorAll('.open-reg-modal-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const staff = api.getCurrentStaff();
+        if (!staff) {
+          staffLoginModal.classList.add('active');
+          return;
+        }
+        modalActId.value = e.currentTarget.getAttribute('data-id');
+        modalActTitle.value = e.currentTarget.getAttribute('data-title');
+        modalActTitle.setAttribute('data-hours', e.currentTarget.getAttribute('data-hours') || 3);
+        staffIdInput.value = staff.studentId;
+        staffNameInput.value = staff.fullName;
+        deptInput.value = `${staff.major} (${staff.department})`;
+
+        const phoneInputEl = document.getElementById('phoneInput');
+        if (phoneInputEl) {
+          phoneInputEl.value = staff.phone || '';
+        }
+
+        registrationModal.classList.add('active');
+      });
+    });
+  }
+
+  // --- ACTIVITY DETAIL & POSTER IMAGE PREVIEW MODAL ---
+  const activityDetailModal = document.getElementById('activityDetailModal');
+  const closeDetailActModalBtn = document.getElementById('closeDetailActModalBtn');
+  if (closeDetailActModalBtn && activityDetailModal) {
+    closeDetailActModalBtn.addEventListener('click', () => {
+      activityDetailModal.classList.remove('active');
+    });
+  }
+
+  function openActivityDetailModal(actId) {
+    const act = currentActivities.find(a => a.id === actId);
+    if (!act || !activityDetailModal) return;
+
+    const directBannerUrl = convertDriveUrlToDirectLink(act.banner) || 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80';
+    const isFull = act.registeredCount >= act.maxQuota || act.status === 'full';
+    const isClosed = act.status === 'closed';
+    const staff = api.getCurrentStaff();
+    const isRegistered = staff ? currentRegistrations.some(r => r.staffId === staff.studentId && r.activityId === act.id) : false;
+
+    const bannerEl = document.getElementById('detailActBanner');
+    if (bannerEl) bannerEl.src = directBannerUrl;
+    
+    const titleEl = document.getElementById('detailActTitle');
+    if (titleEl) titleEl.textContent = act.title;
+
+    const descEl = document.getElementById('detailActDesc');
+    if (descEl) descEl.textContent = act.description || 'ไม่มีรายละเอียดเพิ่มเติม';
+
+    const dateEl = document.getElementById('detailActDate');
+    if (dateEl) dateEl.textContent = act.date;
+
+    const timeEl = document.getElementById('detailActTime');
+    if (timeEl) timeEl.textContent = act.time;
+
+    const locEl = document.getElementById('detailActLocation');
+    if (locEl) locEl.textContent = act.location;
+
+    const quotaEl = document.getElementById('detailActQuotaText');
+    if (quotaEl) quotaEl.textContent = `${act.registeredCount} / ${act.maxQuota} คน`;
+
+    const hoursBadge = document.getElementById('detailActHoursBadge');
+    if (hoursBadge) hoursBadge.innerHTML = `<i class="fa-solid fa-clock"></i> +${act.hours || 3} ชม.สะสม`;
+
+    const statusBadge = document.getElementById('detailActStatusBadge');
+    if (statusBadge) {
+      if (isClosed) { statusBadge.className = 'card-badge badge-closed'; statusBadge.textContent = '🔴 ปิดรับสมัครแล้ว'; }
+      else if (isFull) { statusBadge.className = 'card-badge badge-full'; statusBadge.textContent = 'เต็มจำนวน'; }
+      else { statusBadge.className = 'card-badge badge-open'; statusBadge.textContent = 'เปิดรับลงทะเบียน'; }
+    }
+
+    const footerBox = document.getElementById('detailActFooterBox');
+    if (footerBox) {
+      if (isRegistered) {
+        footerBox.innerHTML = `
+          <button class="btn-register cancel-reg-btn-modal" data-act-id="${act.id}" style="background: #ef4444; color: white; padding: 0.6rem 1.5rem; width: auto; display: inline-flex;">
+            <i class="fa-solid fa-user-xmark"></i> ยกเลิกการลงทะเบียน
+          </button>
+        `;
+      } else {
+        footerBox.innerHTML = `
+          <button class="btn-register open-reg-from-detail-btn" data-id="${act.id}" data-title="${act.title}" data-hours="${act.hours || 3}" ${isFull || isClosed ? 'disabled style="background: #64748b; cursor: not-allowed; opacity: 0.8;"' : ''} style="padding: 0.6rem 1.5rem; width: auto; display: inline-flex;">
+            ${isClosed ? '<i class="fa-solid fa-lock"></i> ปิดรับสมัครแล้ว' : isFull ? 'โควตาเต็มแล้ว' : '<i class="fa-solid fa-pen-to-square"></i> ลงทะเบียนเข้าร่วมกิจกรรมนี้'}
+          </button>
+        `;
+      }
+
+      // Wire Modal Footer Registration Trigger
+      const openRegBtn = footerBox.querySelector('.open-reg-from-detail-btn');
+      if (openRegBtn) {
+        openRegBtn.addEventListener('click', () => {
+          activityDetailModal.classList.remove('active');
+          if (!staff) {
+            staffLoginModal.classList.add('active');
+            return;
+          }
+          modalActId.value = act.id;
+          modalActTitle.value = act.title;
+          modalActTitle.setAttribute('data-hours', act.hours || 3);
+          staffIdInput.value = staff.studentId;
+          staffNameInput.value = staff.fullName;
+          deptInput.value = `${staff.major} (${staff.department})`;
+          const phoneInputEl = document.getElementById('phoneInput');
+          if (phoneInputEl) phoneInputEl.value = staff.phone || '';
+          registrationModal.classList.add('active');
+        });
+      }
+
+      // Wire Modal Footer Cancellation Trigger
+      const cancelRegBtnModal = footerBox.querySelector('.cancel-reg-btn-modal');
+      if (cancelRegBtnModal) {
+        cancelRegBtnModal.addEventListener('click', async () => {
+          const reg = currentRegistrations.find(r => r.staffId === staff.studentId && r.activityId === act.id);
+          if (!reg) return;
+          if (confirm(`คุณต้องการยกเลิกการลงทะเบียนกิจกรรม "${act.title}" ใช่หรือไม่?`)) {
+            activityDetailModal.classList.remove('active');
+            api.deleteRegistration(reg.regId);
+            act.registeredCount = Math.max(0, (act.registeredCount || 1) - 1);
+            if (act.status === 'full' && act.registeredCount < act.maxQuota) act.status = 'open';
+            api.updateActivity(act.id, act);
+            showToast('ยกเลิกการลงทะเบียนเรียบร้อยแล้ว', 'success');
+            await loadAllData();
+            autoDriveBackup('cancel_registration');
+          }
+        });
+      }
+    }
+
+    activityDetailModal.classList.add('active');
+  }
+  if (clickActivitiesCard) {
+    clickActivitiesCard.addEventListener('click', () => {
+      renderActivitiesListTable();
+      activitiesListModal.classList.add('active');
+    });
+  }
+
+  if (clickStaffListCard) {
+    clickStaffListCard.addEventListener('click', () => {
+      renderStaffListTable();
+      staffListModal.classList.add('active');
+    });
+  }
+
+  if (clickRegistrationsCard) {
+    clickRegistrationsCard.addEventListener('click', () => {
+      renderRegistrationsListTable();
+      registrationsListModal.classList.add('active');
+    });
+  }
+
+  if (clickPendingHoursCard) {
+    clickPendingHoursCard.addEventListener('click', () => {
+      const el = document.getElementById('adminApprovalSection');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  if (clickApprovedHoursCard) {
+    clickApprovedHoursCard.addEventListener('click', () => {
+      renderApprovedHoursTable();
+      approvedHoursModal.classList.add('active');
+    });
+  }
+
+  // QUICK ADMIN ACTIONS (6 BUTTONS)
+  if (quickAddActBtn) quickAddActBtn.addEventListener('click', () => addActivityModal.classList.add('active'));
+  if (quickAddStaffBtn) quickAddStaffBtn.addEventListener('click', () => addStaffModal.classList.add('active'));
+  if (quickAddAdminBtn) quickAddAdminBtn.addEventListener('click', () => addAdminModal.classList.add('active'));
+  if (quickListAdminBtn) quickListAdminBtn.addEventListener('click', () => {
+    renderAdminListTable();
+    adminListModal.classList.add('active');
+  });
+  if (quickConnectGasBtn) quickConnectGasBtn.addEventListener('click', () => {
+    gasUrlInput.value = api.getGasUrl();
+    gasSettingsModal.classList.add('active');
+  });
+  if (quickExportCsvBtn) quickExportCsvBtn.addEventListener('click', () => {
+    api.exportCSVReport();
+    showToast('ส่งออกรายงาน CSV สำเร็จเรียบร้อย', 'success');
+  });
+
+  // UNIVERSAL DELEGATE CLOSE LISTENER FOR ALL MODAL CLOSE BUTTONS (.close-btn)
+  document.addEventListener('click', (e) => {
+    const closeBtn = e.target.closest('.close-btn');
+    if (closeBtn) {
+      e.preventDefault();
+      const backdrop = closeBtn.closest('.modal-backdrop');
+      if (backdrop) {
+        backdrop.classList.remove('active');
+      }
+    }
+  });
+
+  // MODALS CLOSE LISTENERS
+  if (typeof closeStaffLoginModalBtn !== 'undefined' && closeStaffLoginModalBtn) closeStaffLoginModalBtn.addEventListener('click', () => staffLoginModal.classList.remove('active'));
+  if (typeof closeAdminLoginModalBtn !== 'undefined' && closeAdminLoginModalBtn) closeAdminLoginModalBtn.addEventListener('click', () => adminLoginModal.classList.remove('active'));
+  if (closeAddActModalBtn) closeAddActModalBtn.addEventListener('click', () => addActivityModal.classList.remove('active'));
+  if (closeEditActModalBtn) closeEditActModalBtn.addEventListener('click', () => editActivityModal.classList.remove('active'));
+  if (closeAddStaffModalBtn) closeAddStaffModalBtn.addEventListener('click', () => addStaffModal.classList.remove('active'));
+  if (closeEditStaffModalBtn) closeEditStaffModalBtn.addEventListener('click', () => editStaffModal.classList.remove('active'));
+  if (closeAddAdminModalBtn) closeAddAdminModalBtn.addEventListener('click', () => addAdminModal.classList.remove('active'));
+  if (closeAdminListModalBtn) closeAdminListModalBtn.addEventListener('click', () => adminListModal.classList.remove('active'));
+  if (closeStaffListModalBtn) closeStaffListModalBtn.addEventListener('click', () => staffListModal.classList.remove('active'));
+  if (closeActivitiesListModalBtn) closeActivitiesListModalBtn.addEventListener('click', () => activitiesListModal.classList.remove('active'));
+  if (closeRegsListModalBtn) closeRegsListModalBtn.addEventListener('click', () => registrationsListModal.classList.remove('active'));
+  if (closeApprovedHoursModalBtn) closeApprovedHoursModalBtn.addEventListener('click', () => approvedHoursModal.classList.remove('active'));
+  if (closeGasModalBtn) closeGasModalBtn.addEventListener('click', () => gasSettingsModal.classList.remove('active'));
+  if (closeRegModalBtn) closeRegModalBtn.addEventListener('click', () => registrationModal.classList.remove('active'));
+
+  // Close modal when clicking outside on the backdrop background
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) {
+        backdrop.classList.remove('active');
+      }
+    });
+  });
+
+  // Close active modal when pressing Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop.active').forEach(m => m.classList.remove('active'));
+    }
+  });
+
+  // REGISTRATION SUBMIT WITH AUTO-DRIVE BACKUP TRIGGER
+  regForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = regForm.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึก...';
+
+    const staff = api.getCurrentStaff();
+    const phoneVal = document.getElementById('phoneInput').value.trim();
+
+    // Auto-save phone number to staff profile if provided
+    if (staff && phoneVal) {
+      staff.phone = phoneVal;
+      api.updateStaffUser(staff.studentId, { phone: phoneVal });
+    }
+
+    const payload = {
+      activityId: modalActId.value,
+      activityTitle: modalActTitle.value,
+      hours: parseInt(modalActTitle.getAttribute('data-hours') || 3, 10),
+      staffId: staff ? staff.studentId : '',
+      staffName: staff ? staff.fullName : '',
+      major: staff ? staff.major : '',
+      department: staff ? staff.department : '',
+      position: staff ? staff.position : '',
+      phone: phoneVal
+    };
+
+    const res = await api.registerStaff(payload);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> ยืนยันการลงทะเบียน';
+    registrationModal.classList.remove('active');
+
+    if (res && res.success) {
+      showToast('บันทึกการลงทะเบียนสำเร็จเรียบร้อย! รอเจ้าหน้าที่อนุมัติชั่วโมง', 'success');
+      await loadAllData();
+      autoDriveBackup('new_registration');
+    } else {
+      showToast('เกิดข้อผิดพลาดในการลงทะเบียน', 'error');
+    }
+  });
+
+  // RENDER TABLE: ACTIVITIES LIST (WITH REORDER, EDIT & DELETE)
+  function renderActivitiesListTable() {
+    if (!activitiesListTableBody) return;
+    activitiesListTableBody.innerHTML = '';
+
+    currentActivities.forEach((a, idx) => {
+      const realCount = currentRegistrations.filter(r => r.activityId === a.id).length;
+      a.registeredCount = realCount;
+
+      const isFirst = idx === 0;
+      const isLast = idx === currentActivities.length - 1;
+
+      activitiesListTableBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td><strong style="font-family:'Space Grotesk', monospace;">${a.id}</strong></td>
+          <td>
+            <div style="font-weight:700; color:var(--text-dark);">${a.title}</div>
+            <div style="font-size:0.75rem; color:var(--text-gray);">${a.category}</div>
+          </td>
+          <td>${a.date} <small style="color:var(--text-gray);">(${a.time})</small></td>
+          <td>${a.location}</td>
+          <td><strong>${realCount}</strong> / ${a.maxQuota} คน</td>
+          <td><strong>+${a.hours || 3} ชม.</strong></td>
+          <td>
+            <div style="display:flex; align-items:center; gap:0.25rem; flex-wrap:wrap;">
+              <button class="role-pill-btn move-up-act-btn" data-idx="${idx}" ${isFirst ? 'disabled style="opacity:0.35; cursor:not-allowed; background:#94a3b8; color:white; padding:0.25rem 0.5rem; font-size:0.75rem;"' : 'style="background:#0284c7; color:white; padding:0.25rem 0.5rem; font-size:0.75rem; cursor:pointer;"'} title="เลื่อนลำดับขึ้น"><i class="fa-solid fa-arrow-up"></i></button>
+              <button class="role-pill-btn move-down-act-btn" data-idx="${idx}" ${isLast ? 'disabled style="opacity:0.35; cursor:not-allowed; background:#94a3b8; color:white; padding:0.25rem 0.5rem; font-size:0.75rem;"' : 'style="background:#0284c7; color:white; padding:0.25rem 0.5rem; font-size:0.75rem; cursor:pointer;"'} title="เลื่อนลำดับลง"><i class="fa-solid fa-arrow-down"></i></button>
+              ${a.status === 'open' 
+                ? `<button class="role-pill-btn toggle-act-status-btn" data-id="${a.id}" data-target-status="closed" style="background:#dc2626; color:white; padding:0.25rem 0.55rem; font-size:0.75rem; cursor:pointer;" title="คลิกเพื่อปิดรับสมัคร"><i class="fa-solid fa-lock"></i> ปิดรับสมัคร</button>` 
+                : `<button class="role-pill-btn toggle-act-status-btn" data-id="${a.id}" data-target-status="open" style="background:#16a34a; color:white; padding:0.25rem 0.55rem; font-size:0.75rem; cursor:pointer;" title="คลิกเพื่อเปิดรับสมัคร"><i class="fa-solid fa-lock-open"></i> เปิดรับสมัคร</button>`}
+              <button class="role-pill-btn add-staff-to-act-btn" data-id="${a.id}" style="background:#10b981; color:white; padding:0.25rem 0.6rem; font-size:0.75rem; cursor:pointer;" title="เพิ่มผู้ปฏิบัติงานเข้ากิจกรรมนี้"><i class="fa-solid fa-user-plus"></i> เพิ่มคน</button>
+              <button class="role-pill-btn edit-act-btn" data-id="${a.id}" style="background:#2563eb; color:white; padding:0.25rem 0.6rem; font-size:0.75rem; cursor:pointer;" title="แก้ไขกิจกรรม"><i class="fa-solid fa-pen"></i> แก้ไข</button>
+              <button class="role-pill-btn delete-act-btn" data-id="${a.id}" style="background:#ef4444; color:white; padding:0.25rem 0.5rem; font-size:0.75rem; cursor:pointer;" title="ลบกิจกรรม"><i class="fa-solid fa-trash"></i> ลบ</button>
+            </div>
+          </td>
+        </tr>
+      `);
+    });
+
+    // 1-Click Quick Toggle Activity Status Listener
+    document.querySelectorAll('.toggle-act-status-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const newStatus = e.currentTarget.getAttribute('data-target-status');
+        const act = currentActivities.find(a => a.id === id);
+        if (act) {
+          act.status = newStatus;
+          await api.updateActivity(id, { status: newStatus });
+          const label = newStatus === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร';
+          showToast(`สลับสถานะกิจกรรม "${act.title}" เป็น "${label}" เรียบร้อยแล้ว`, 'success');
+          renderActivitiesListTable();
+          filterAndRenderActivities();
+          autoDriveBackup('toggle_activity_status');
+        }
+      });
+    });
+
+    // Add Staff To Activity Listener
+    const addStaffToActModal = document.getElementById('addStaffToActModal');
+    const selectStaffUserForAct = document.getElementById('selectStaffUserForAct');
+
+    document.querySelectorAll('.add-staff-to-act-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const act = currentActivities.find(a => a.id === id);
+        if (act && addStaffToActModal) {
+          document.getElementById('adminAddActId').value = act.id;
+          document.getElementById('adminAddActTitle').value = act.title;
+          document.getElementById('adminAddActHours').value = act.hours || 3;
+          document.getElementById('adminAddActNameLabel').textContent = `${act.title} (${act.id})`;
+
+          // Populate staff members dropdown from database
+          const staffUsers = api.getStaffUsers();
+          selectStaffUserForAct.innerHTML = '<option value="">-- เลือกผู้ปฏิบัติงาน --</option>';
+
+          staffUsers.forEach(s => {
+            const isRegged = currentRegistrations.some(r => r.staffId === s.studentId && r.activityId === act.id);
+            const label = `${s.studentId} - ${s.fullName} (${s.department || s.major}) ${isRegged ? '⚠️ (ลงทะเบียนแล้ว)' : ''}`;
+            const opt = document.createElement('option');
+            opt.value = s.studentId;
+            opt.textContent = label;
+            if (isRegged) {
+              opt.disabled = true;
+            }
+            selectStaffUserForAct.appendChild(opt);
+          });
+
+          addStaffToActModal.classList.add('active');
+        }
+      });
+    });
+
+    // Move Up Listener
+    document.querySelectorAll('.move-up-act-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-idx'), 10);
+        if (idx > 0) {
+          const temp = currentActivities[idx];
+          currentActivities[idx] = currentActivities[idx - 1];
+          currentActivities[idx - 1] = temp;
+
+          api.saveActivitiesOrder(currentActivities);
+          renderActivitiesListTable();
+          filterAndRenderActivities();
+          showToast('ปรับเลื่อนลำดับกิจกรรมขึ้นเรียบร้อยแล้ว', 'success');
+        }
+      });
+    });
+
+    // Move Down Listener
+    document.querySelectorAll('.move-down-act-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-idx'), 10);
+        if (idx < currentActivities.length - 1) {
+          const temp = currentActivities[idx];
+          currentActivities[idx] = currentActivities[idx + 1];
+          currentActivities[idx + 1] = temp;
+
+          api.saveActivitiesOrder(currentActivities);
+          renderActivitiesListTable();
+          filterAndRenderActivities();
+          showToast('ปรับเลื่อนลำดับกิจกรรมลงเรียบร้อยแล้ว', 'success');
+        }
+      });
+    });
+
+    document.querySelectorAll('.edit-act-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const act = currentActivities.find(a => a.id === id);
+        if (act) {
+          document.getElementById('editActId').value = act.id;
+          document.getElementById('editActTitle').value = act.title;
+          document.getElementById('editActDesc').value = act.description || '';
+          document.getElementById('editActDate').value = act.date;
+          document.getElementById('editActTime').value = act.time;
+          document.getElementById('editActLocation').value = act.location;
+          document.getElementById('editActQuota').value = act.maxQuota;
+          document.getElementById('editActHours').value = act.hours || 3;
+          const statusInput = document.getElementById('editActStatus');
+          if (statusInput) statusInput.value = act.status || 'open';
+          document.getElementById('editActBanner').value = act.banner || '';
+          editActivityModal.classList.add('active');
+        }
+      });
+    });
+
+    document.querySelectorAll('.delete-act-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        if (confirm(`คุณต้องการลบกิจกรรมรหัส ${id} ใช่หรือไม่?`)) {
+          api.deleteActivity(id);
+          showToast(`ลบกิจกรรมรหัส ${id} เรียบร้อยแล้ว`, 'success');
+          await loadAllData();
+          renderActivitiesListTable();
+          autoDriveBackup('delete_activity');
+        }
+      });
+    });
+  }
+
+  // SUBMIT EDIT ACTIVITY FORM
+  if (editActivityForm) {
+    editActivityForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = editActivityForm.querySelector('button[type="submit"]');
+      const originalHtml = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-save"></i> บันทึกการแก้ไข';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึกการแก้ไขลง Google Sheets...';
+      }
+
+      try {
+        const id = document.getElementById('editActId').value;
+        const bannerVal = document.getElementById('editActBanner').value.trim();
+        const updated = {
+          title: document.getElementById('editActTitle').value.trim(),
+          description: document.getElementById('editActDesc').value.trim(),
+          date: document.getElementById('editActDate').value,
+          time: document.getElementById('editActTime').value.trim(),
+          location: document.getElementById('editActLocation').value.trim(),
+          maxQuota: parseInt(document.getElementById('editActQuota').value, 10),
+          hours: parseInt(document.getElementById('editActHours').value, 10),
+          status: document.getElementById('editActStatus').value
+        };
+
+        if (bannerVal) {
+          updated.banner = bannerVal;
+        }
+
+        await api.updateActivity(id, updated);
+        document.getElementById('editActivityModal').classList.remove('active');
+        showToast(`✅ บันทึกแก้ไขข้อมูลกิจกรรม "${updated.title}" สำเร็จเรียบร้อยแล้ว!`, 'success');
+        await loadAllData();
+        renderActivitiesListTable();
+        filterAndRenderActivities();
+        autoDriveBackup('edit_activity');
+      } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHtml;
+        }
+      }
+    });
+  }
+
+  // RENDER TABLE: STAFF USERS LIST (WITH EDIT & DELETE)
+  function renderStaffListTable() {
+    if (!staffListTableBody) return;
+    const staffList = api.getStaffUsers();
+    staffListTableBody.innerHTML = '';
+
+    staffList.forEach(s => {
+      const avatarUrl = convertDriveUrlToDirectLink(s.avatar);
+      const avatarHtml = avatarUrl
+        ? `<img src="${avatarUrl}" alt="Avatar" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">`
+        : `<div style="width:36px; height:36px; border-radius:50%; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; font-size:0.9rem;"><i class="fa-solid fa-user-graduate"></i></div>`;
+
+      let earned = s.studentId === '673450351-6' ? 2 : 0;
+      currentRegistrations.forEach(r => {
+        if (r.staffId === s.studentId && r.status === 'approved') {
+          earned += (r.earnedHours || r.baseHours || 3);
+        }
+      });
+
+      const cleanName = s.fullName ? s.fullName.replace(/\s*\([^)]*\)/g, '').trim() : 'ผู้ปฏิบัติงาน';
+
+      staffListTableBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td>${avatarHtml}</td>
+          <td><strong style="font-family:'Space Grotesk', monospace;">${s.studentId}</strong></td>
+          <td><strong>${cleanName}</strong></td>
+          <td>${s.major} <small style="color:var(--text-gray);">(${s.year || 'ชั้นปีที่ 3'})</small></td>
+          <td>${s.department} <small style="color:var(--text-gray);">(${s.position || ''})</small></td>
+          <td><strong style="color:var(--success-green);">${earned} / ${s.targetHours || 200} ชม.</strong></td>
+          <td>
+            <button class="role-pill-btn edit-staff-btn" data-id="${s.studentId}" style="background:#2563eb; color:white; padding:0.25rem 0.6rem; font-size:0.75rem; margin-right:0.25rem;"><i class="fa-solid fa-user-pen"></i> แก้ไข</button>
+            <button class="role-pill-btn delete-staff-btn" data-id="${s.studentId}" style="background:#ef4444; color:white; padding:0.25rem 0.5rem; font-size:0.75rem;"><i class="fa-solid fa-trash"></i> ลบ</button>
+          </td>
+        </tr>
+      `);
+    });
+
+    document.querySelectorAll('.edit-staff-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const s = api.getStaffUsers().find(x => x.studentId === id);
+        if (s) {
+          document.getElementById('editStaffIdKey').value = s.studentId;
+          document.getElementById('editStaffId').value = s.studentId;
+          document.getElementById('editStaffName').value = s.fullName;
+          document.getElementById('editStaffMajor').value = s.major;
+          document.getElementById('editStaffYear').value = s.year || 'ชั้นปีที่ 3';
+          document.getElementById('editStaffDept').value = s.department;
+          document.getElementById('editStaffPos').value = s.position;
+          const targetHoursInput = document.getElementById('editStaffTargetHours');
+          if (targetHoursInput) targetHoursInput.value = s.targetHours || 200;
+          document.getElementById('editStaffAvatar').value = s.avatar || '';
+          editStaffModal.classList.add('active');
+        }
+      });
+    });
+
+    document.querySelectorAll('.delete-staff-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        if (confirm(`คุณต้องการลบผู้ปฏิบัติงานรหัส ${id} ใช่หรือไม่?`)) {
+          api.deleteStaffUser(id);
+          showToast(`ลบผู้ปฏิบัติงานรหัส ${id} เรียบร้อยแล้ว`, 'success');
+          await loadAllData();
+          renderStaffListTable();
+          autoDriveBackup('delete_staff');
+        }
+      });
+    });
+  }
+
+  // SUBMIT EDIT STAFF FORM
+  if (editStaffForm) {
+    editStaffForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = editStaffForm.querySelector('button[type="submit"]');
+      const originalHtml = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-save"></i> บันทึกการแก้ไข';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึกการแก้ไขลง Google Sheets...';
+      }
+
+      try {
+        const id = document.getElementById('editStaffIdKey').value;
+        const avatarVal = document.getElementById('editStaffAvatar').value.trim();
+        const targetHoursVal = parseInt(document.getElementById('editStaffTargetHours').value, 10);
+
+        const updated = {
+          fullName: document.getElementById('editStaffName').value.trim(),
+          major: document.getElementById('editStaffMajor').value.trim(),
+          year: document.getElementById('editStaffYear').value,
+          department: document.getElementById('editStaffDept').value.trim(),
+          position: document.getElementById('editStaffPos').value.trim(),
+          targetHours: isNaN(targetHoursVal) ? 200 : targetHoursVal
+        };
+
+        if (avatarVal) {
+          updated.avatar = avatarVal;
+        }
+
+        await api.updateStaffUser(id, updated);
+        editStaffModal.classList.remove('active');
+        showToast(`✅ บันทึกแก้ไขข้อมูลผู้ปฏิบัติงานรหัส ${id} สำเร็จเรียบร้อยแล้ว!`, 'success');
+        await loadAllData();
+        renderStaffListTable();
+        autoDriveBackup('edit_staff');
+      } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHtml;
+        }
+      }
+    });
+  }
+
+  // RENDER TABLE: REGISTRATIONS LIST (WITH DELETE)
+  function renderRegistrationsListTable() {
+    if (!regsListTableBody) return;
+    regsListTableBody.innerHTML = '';
+
+    currentRegistrations.forEach(r => {
+      const isApproved = r.status === 'approved';
+      const isRejected = r.status === 'rejected';
+
+      regsListTableBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td><strong style="font-family:'Space Grotesk', monospace;">${r.regId}</strong></td>
+          <td>
+            <div style="font-weight:700; color:var(--text-dark);">${r.staffName}</div>
+            <div style="font-size:0.75rem; color:var(--text-gray);">${r.staffId}</div>
+          </td>
+          <td>${r.activityTitle}</td>
+          <td><strong>${r.baseHours || 3} ชม.</strong></td>
+          <td>
+            ${isApproved ? '<span class="status-tag-checked">อนุมัติแล้ว</span>' : isRejected ? '<span style="background:#fee2e2; color:#991b1b; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem;">ปฏิเสธ</span>' : '<span class="status-tag-pending">รออนุมัติ</span>'}
+          </td>
+          <td>
+            <button class="role-pill-btn delete-reg-btn" data-id="${r.regId}" style="background:#ef4444; color:white; padding:0.25rem 0.5rem; font-size:0.75rem;"><i class="fa-solid fa-trash"></i> ลบรายการ</button>
+          </td>
+        </tr>
+      `);
+    });
+
+    document.querySelectorAll('.delete-reg-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        if (confirm(`คุณต้องการลบรายการลงทะเบียน ${id} ใช่หรือไม่?`)) {
+          api.deleteRegistration(id);
+          showToast(`ลบรายการลงทะเบียน ${id} เรียบร้อยแล้ว`, 'success');
+          await loadAllData();
+          renderRegistrationsListTable();
+          autoDriveBackup('delete_registration');
+        }
+      });
+    });
+  }
+
+  // RENDER TABLE: APPROVED HOURS HISTORY
+  function renderApprovedHoursTable() {
+    if (!approvedHoursTableBody) return;
+    approvedHoursTableBody.innerHTML = '';
+
+    const approvedList = currentRegistrations.filter(r => r.status === 'approved');
+
+    if (approvedList.length === 0) {
+      approvedHoursTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-gray);">ไม่พบประวัติชั่วโมงที่ได้รับการอนุมัติ</td></tr>`;
+      return;
+    }
+
+    approvedList.forEach(r => {
+      approvedHoursTableBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td><strong style="font-family:'Space Grotesk', monospace;">${r.regId}</strong></td>
+          <td>
+            <div style="font-weight:700; color:var(--text-dark);">${r.staffName}</div>
+            <div style="font-size:0.75rem; color:var(--text-gray);">${r.staffId} (${r.department})</div>
+          </td>
+          <td>${r.activityTitle}</td>
+          <td><strong style="color:var(--success-green);">+${r.earnedHours || r.baseHours || 3} ชม.</strong></td>
+          <td><small style="color:var(--text-gray);"><i class="fa-solid fa-clock-check"></i> ${r.checkInTime || r.timestamp}</small></td>
+          <td>
+            <button class="role-pill-btn unapprove-modal-btn" data-id="${r.regId}" style="background:#f59e0b; color:white; padding:0.25rem 0.6rem; font-size:0.75rem;"><i class="fa-solid fa-rotate-left"></i> ยกเลิกการอนุมัติ</button>
+          </td>
+        </tr>
+      `);
+    });
+
+    document.querySelectorAll('.unapprove-modal-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        await api.unapproveHours(id);
+        showToast(`ยกเลิกการอนุมัติสำหรับรหัส ${id} เรียบร้อยแล้ว (ย้อนกลับเป็นรออนุมัติ)`, 'info');
+        await loadAllData();
+        renderApprovedHoursTable();
+        renderAdminTables();
+        autoDriveBackup('unapprove_hours');
+      });
+    });
+  }
+
+  // RENDER TABLE: ADMIN USERS LIST (WITH EDIT & DELETE)
+  function renderAdminListTable() {
+    if (!adminListTableBody) return;
+    const admins = api.getAdminUsers();
+    adminListTableBody.innerHTML = '';
+    admins.forEach(a => {
+      const avatarUrl = convertDriveUrlToDirectLink(a.avatar);
+      const avatarHtml = avatarUrl 
+        ? `<img src="${avatarUrl}" alt="Avatar" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">`
+        : `<div style="width:36px; height:36px; border-radius:50%; background:#e0e7ff; color:#3730a3; display:flex; align-items:center; justify-content:center; font-size:0.9rem;"><i class="fa-solid fa-user-shield"></i></div>`;
+
+      adminListTableBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td>${avatarHtml}</td>
+          <td><strong style="font-family:'Space Grotesk', monospace;">${a.username}</strong></td>
+          <td>${a.fullName}</td>
+          <td>${a.position}</td>
+          <td><span style="background:#e0e7ff; color:#3730a3; padding:0.2rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:600;">${a.role || 'Admin'}</span></td>
+          <td>
+            <button class="role-pill-btn edit-admin-btn" data-id="${a.username}" style="background:#2563eb; color:white; padding:0.25rem 0.6rem; font-size:0.75rem; margin-right:0.25rem;"><i class="fa-solid fa-user-pen"></i> แก้ไข</button>
+            ${a.username !== 'admin' ? `<button class="role-pill-btn delete-admin-btn" data-id="${a.username}" style="background:#ef4444; color:white; padding:0.25rem 0.5rem; font-size:0.75rem;"><i class="fa-solid fa-trash"></i> ลบ</button>` : '<small style="color:var(--text-gray);">แอดมินหลัก</small>'}
+          </td>
+        </tr>
+      `);
+    });
+
+    // Attach Edit Admin Event
+    document.querySelectorAll('.edit-admin-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const username = e.currentTarget.getAttribute('data-id');
+        const a = api.getAdminUsers().find(x => x.username === username);
+        if (a) {
+          document.getElementById('editAdminUsernameKey').value = a.username;
+          document.getElementById('editAdminUsername').value = a.username;
+          document.getElementById('editAdminFullName').value = a.fullName;
+          document.getElementById('editAdminPosition').value = a.position;
+          document.getElementById('editAdminPassword').value = '';
+          document.getElementById('editAdminAvatar').value = a.avatar || '';
+          document.getElementById('editAdminModal').classList.add('active');
+        }
+      });
+    });
+
+    // Attach Delete Admin Event
+    document.querySelectorAll('.delete-admin-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const username = e.currentTarget.getAttribute('data-id');
+        if (confirm(`คุณต้องการลบแอดมิน ${username} ใช่หรือไม่?`)) {
+          api.deleteAdminUser(username);
+          showToast(`ลบแอดมิน ${username} เรียบร้อยแล้ว`, 'success');
+          loadAllData();
+          renderAdminListTable();
+          autoDriveBackup('delete_admin');
+        }
+      });
+    });
+  }
+
+  // SUBMIT EDIT ADMIN FORM
+  const editAdminForm = document.getElementById('editAdminForm');
+  const closeEditAdminModalBtn = document.getElementById('closeEditAdminModalBtn');
+  if (closeEditAdminModalBtn) {
+    closeEditAdminModalBtn.addEventListener('click', () => {
+      document.getElementById('editAdminModal').classList.remove('active');
+    });
+  }
+
+  if (editAdminForm) {
+    editAdminForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = editAdminForm.querySelector('button[type="submit"]');
+      const originalHtml = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-save"></i> บันทึกการแก้ไข';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึกการแก้ไขลง Google Sheets...';
+      }
+
+      try {
+        const username = document.getElementById('editAdminUsernameKey').value;
+        const avatarVal = document.getElementById('editAdminAvatar').value.trim();
+
+        const updated = {
+          fullName: document.getElementById('editAdminFullName').value.trim(),
+          position: document.getElementById('editAdminPosition').value.trim()
+        };
+        const pwd = document.getElementById('editAdminPassword').value.trim();
+        if (pwd) updated.password = pwd;
+
+        if (avatarVal) {
+          updated.avatar = avatarVal;
+        }
+
+        await api.updateAdminUser(username, updated);
+        document.getElementById('editAdminModal').classList.remove('active');
+        showToast(`✅ บันทึกแก้ไขข้อมูลแอดมิน "${username}" สำเร็จเรียบร้อยแล้ว!`, 'success');
+        await loadAllData();
+        renderAdminListTable();
+        autoDriveBackup('edit_admin');
+      } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHtml;
+        }
+      }
+    });
+  }
+
+  // ADD STAFF USER SUBMIT
+  if (addStaffForm) {
+    addStaffForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = addStaffForm.querySelector('button[type="submit"]');
+      const originalHtml = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-plus"></i> บันทึกเพิ่มผู้ปฏิบัติงาน';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึกข้อมูลลง Google Sheets...';
+      }
+
+      try {
+        const rawAvatar = newStaffAvatar ? newStaffAvatar.value.trim() : '';
+        const targetHoursVal = parseInt(document.getElementById('newStaffTargetHours').value, 10);
+        const newUser = {
+          studentId: document.getElementById('newStaffId').value.trim(),
+          fullName: document.getElementById('newStaffName').value.trim(),
+          major: document.getElementById('newStaffMajor').value.trim(),
+          year: document.getElementById('newStaffYear').value,
+          department: document.getElementById('newStaffDept').value.trim(),
+          position: document.getElementById('newStaffPos').value.trim(),
+          avatar: convertDriveUrlToDirectLink(rawAvatar),
+          targetHours: isNaN(targetHoursVal) ? 200 : targetHoursVal
+        };
+        await api.createStaffUser(newUser);
+        addStaffModal.classList.remove('active');
+        addStaffForm.reset();
+        if (staffAvatarPreviewBox) staffAvatarPreviewBox.style.display = 'none';
+        showToast(`✅ บันทึกเพิ่มผู้ปฏิบัติงานใหม่ "${newUser.fullName}" สำเร็จเรียบร้อยแล้ว!`, 'success');
+        await loadAllData();
+        renderStaffListTable();
+        autoDriveBackup('create_staff');
+      } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHtml;
+        }
+      }
+    });
+  }
+
+  // ADD ADMIN USER SUBMIT
+  if (addAdminForm) {
+    addAdminForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = addAdminForm.querySelector('button[type="submit"]');
+      const originalHtml = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-plus"></i> บันทึกเพิ่มแอดมิน';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึกข้อมูลลง Google Sheets...';
+      }
+
+      try {
+        const rawAvatar = newAdminAvatar ? newAdminAvatar.value.trim() : '';
+        const newAdmin = {
+          username: document.getElementById('newAdminUsername').value.trim(),
+          password: document.getElementById('newAdminPassword').value.trim(),
+          fullName: document.getElementById('newAdminFullName').value.trim(),
+          position: document.getElementById('newAdminPosition').value.trim(),
+          avatar: convertDriveUrlToDirectLink(rawAvatar),
+          role: 'Admin'
+        };
+        await api.createAdminUser(newAdmin);
+        addAdminModal.classList.remove('active');
+        addAdminForm.reset();
+        if (adminAvatarPreviewBox) adminAvatarPreviewBox.style.display = 'none';
+        showToast(`✅ บันทึกเพิ่มเจ้าหน้าที่/แอดมินใหม่ "${newAdmin.fullName}" สำเร็จเรียบร้อยแล้ว!`, 'success');
+        await loadAllData();
+        renderAdminListTable();
+        autoDriveBackup('create_admin');
+      } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHtml;
+        }
+      }
+    });
+  }
+
+  // ADD ACTIVITY SUBMIT WITH GOOGLE DRIVE BANNER CONVERSION
+  if (addActivityForm) {
+    addActivityForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = addActivityForm.querySelector('button[type="submit"]');
+      const originalHtml = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-plus"></i> บันทึกสร้างกิจกรรม';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึกกิจกรรมใหม่ลง Google Sheets...';
+      }
+
+      try {
+        const rawBanner = newActBanner ? newActBanner.value.trim() : '';
+        const directBanner = convertDriveUrlToDirectLink(rawBanner) || 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80';
+
+        const newAct = {
+          title: document.getElementById('newActTitle').value.trim(),
+          description: document.getElementById('newActDesc').value.trim(),
+          date: document.getElementById('newActDate').value,
+          time: document.getElementById('newActTime').value.trim(),
+          location: document.getElementById('newActLocation').value.trim(),
+          maxQuota: parseInt(document.getElementById('newActQuota').value, 10),
+          hours: parseInt(document.getElementById('newActHours').value, 10) || 3,
+          banner: directBanner
+        };
+
+        await api.createActivity(newAct);
+        addActivityModal.classList.remove('active');
+        addActivityForm.reset();
+        if (actBannerPreviewBox) actBannerPreviewBox.style.display = 'none';
+        showToast(`✅ บันทึกสร้างกิจกรรมใหม่ "${newAct.title}" สำเร็จเรียบร้อยแล้ว!`, 'success');
+        await loadAllData();
+        renderActivitiesListTable();
+        filterAndRenderActivities();
+        autoDriveBackup('create_activity');
+      } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาดในการบันทึกกิจกรรม กรุณาลองใหม่อีกครั้ง', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHtml;
+        }
+      }
+    });
+  }
+
+  // SUBMIT ADMIN ADD STAFF TO ACTIVITY FORM
+  const addStaffToActForm = document.getElementById('addStaffToActForm');
+  const addStaffToActModal = document.getElementById('addStaffToActModal');
+
+  if (addStaffToActForm) {
+    addStaffToActForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const studentId = document.getElementById('selectStaffUserForAct').value;
+      if (!studentId) {
+        showToast('กรุณาเลือกผู้ปฏิบัติงานจากรายการ', 'warning');
         return;
       }
-      if (sheetsUrlInput) sheetsUrlInput.value = store.getGoogleSheetUrl();
-      openModal('google-sheet-settings-modal');
-    });
-  }
 
-  if (saveSheetsUrlBtn) {
-    saveSheetsUrlBtn.addEventListener('click', () => {
-      const url = sheetsUrlInput.value.trim();
-      store.setGoogleSheetUrl(url);
-      if (url) {
-        ui.showToast('บันทึก Google Sheets Web App URL เรียบร้อยแล้ว', 'success');
-      } else {
-        ui.showToast('ยกเลิกการเชื่อมต่อ Google Sheets แล้ว', 'info');
+      const staff = api.getStaffUsers().find(s => s.studentId === studentId);
+      if (!staff) {
+        showToast('ไม่พบข้อมูลผู้ปฏิบัติงานรหัสนี้ในระบบ', 'error');
+        return;
       }
-    });
-  }
 
-  const pushAllToSheetsBtn = document.getElementById('push-all-to-sheets-btn');
-  if (pushAllToSheetsBtn) {
-    pushAllToSheetsBtn.addEventListener('click', async () => {
-      ui.showToast('กำลังส่งข้อมูลจากเครื่องนี้ขึ้น Google Sheets...', 'info');
-      const result = await store.syncToGoogleSheets();
-      if (result.success) {
-        ui.showToast('ส่งข้อมูลทั้งหมดจากเครื่องนี้ขึ้น Google Sheets เรียบร้อยแล้ว! ทุกเครื่องเห็นตรงกันทันที', 'success');
-      } else {
-        ui.showToast(result.message, 'danger');
+      const submitBtn = addStaffToActForm.querySelector('button[type="submit"]');
+      const originalHtml = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-user-plus"></i> ยืนยันเพิ่มคนเข้ากิจกรรม';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึกเพิ่มรายชื่อ...';
       }
-    });
-  }
 
-  if (manualSyncSheetsBtn) {
-    manualSyncSheetsBtn.addEventListener('click', async () => {
-      const result = await store.syncToGoogleSheets();
-      if (result.success) {
-        ui.showToast('ซิงค์ส่งข้อมูลผู้ปฏิบัติงาน กิจกรรม และการสะสมชั่วโมงไปยัง Google Sheets เรียบร้อยแล้ว', 'success');
-      } else {
-        ui.showToast(result.message, 'danger');
-      }
-    });
-  }
+      try {
+        const actId = document.getElementById('adminAddActId').value;
+        const actTitle = document.getElementById('adminAddActTitle').value;
+        const hours = parseInt(document.getElementById('adminAddActHours').value, 10) || 3;
+        const initialStatus = document.getElementById('adminAddActStatus').value;
 
-  if (manualFetchSheetsBtn) {
-    manualFetchSheetsBtn.addEventListener('click', async () => {
-      const result = await store.fetchFromGoogleSheets(true);
-      if (result.success) {
-        populateCategoryDropdowns();
-        populateUserDropdown();
-        refreshHeaderProfile();
-        renderCurrentView();
-        ui.showToast('ดึงข้อมูลล่าสุดจาก Google Sheets เรียบร้อยแล้ว', 'success');
-      } else {
-        ui.showToast(result.message, 'danger');
-      }
-    });
-  }
+        const payload = {
+          activityId: actId,
+          activityTitle: actTitle,
+          hours: hours,
+          staffId: staff.studentId,
+          staffName: staff.fullName,
+          major: staff.major,
+          department: staff.department,
+          position: staff.position,
+          phone: staff.phone || ''
+        };
 
-  const exportBackupJsonBtn = document.getElementById('export-backup-json-btn');
-  const importBackupJsonBtn = document.getElementById('import-backup-json-btn');
-  const importBackupJsonFile = document.getElementById('import-backup-json-file');
+        const res = await api.registerStaff(payload);
+        if (addStaffToActModal) addStaffToActModal.classList.remove('active');
 
-  if (exportBackupJsonBtn) {
-    exportBackupJsonBtn.addEventListener('click', () => {
-      const jsonStr = store.exportBackupData();
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const dateStr = new Date().toISOString().split('T')[0];
-      a.download = `smo_staff_backup_${dateStr}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      ui.showToast('ดาวน์โหลดไฟล์สำรองข้อมูล (.json) เรียบร้อยแล้ว', 'success');
-    });
-  }
-
-  if (importBackupJsonBtn && importBackupJsonFile) {
-    importBackupJsonBtn.addEventListener('click', () => {
-      importBackupJsonFile.click();
-    });
-
-    importBackupJsonFile.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = store.importBackupData(event.target.result);
-        if (result.success) {
-          populateCategoryDropdowns();
-          populateUserDropdown();
-          refreshHeaderProfile();
-          renderCurrentView();
-          ui.showToast(result.message, 'success');
+        if (res && res.success) {
+          if (initialStatus === 'approved' && res.regId) {
+            await api.approveHours(res.regId);
+          }
+          showToast(`✅ บันทึกเพิ่มคุณ ${staff.fullName} เข้ากิจกรรมสำเร็จเรียบร้อยแล้ว!`, 'success');
+          loadAllData();
+          renderActivitiesListTable();
+          filterAndRenderActivities();
+          autoDriveBackup('admin_add_staff_to_act');
         } else {
-          ui.showToast(result.message, 'danger');
+          showToast('เกิดข้อผิดพลาด หรือผู้ปฏิบัติงานท่านนี้ถูกเพิ่มลงทะเบียนไว้แล้ว', 'error');
         }
-        importBackupJsonFile.value = '';
-      };
-      reader.readAsText(file);
-    });
-  }
-
-  if (copyGasCodeBtn) {
-    copyGasCodeBtn.addEventListener('click', () => {
-      const codeBlock = document.getElementById('gas-code-block');
-      if (codeBlock) {
-        navigator.clipboard.writeText(codeBlock.innerText);
-        ui.showToast('คัดลอกโค้ดสคริปต์ Google Apps Script เรียบร้อยแล้ว', 'info');
+      } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHtml;
+        }
       }
     });
   }
 
-  // Initial Run
-  initApp();
+  saveGasUrlBtn.addEventListener('click', async () => {
+    const url = gasUrlInput.value.trim();
+    if (!url) {
+      showToast('กรุณาระบุ Web App URL ก่อนบันทึก', 'warning');
+      return;
+    }
+
+    saveGasUrlBtn.disabled = true;
+    saveGasUrlBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังซิงค์ข้อมูลจริงจาก Google Sheets...';
+
+    await api.setGasUrl(url);
+
+    saveGasUrlBtn.disabled = false;
+    saveGasUrlBtn.innerHTML = '<i class="fa-solid fa-link"></i> บันทึกการเชื่อมต่อ Google Drive';
+    gasSettingsModal.classList.remove('active');
+
+    showToast('เชื่อมต่อและดึงข้อมูลจริงจาก Google Sheets เรียบร้อยแล้ว!', 'success');
+    await loadAllData();
+  });
+
+  // DRIVE BACKUP TRIGGER BUTTON
+  if (triggerDriveBackupBtn) {
+    triggerDriveBackupBtn.addEventListener('click', async () => {
+      const gasUrl = api.getGasUrl();
+      if (!gasUrl) {
+        gasUrlInput.value = '';
+        gasSettingsModal.classList.add('active');
+        showToast('กรุณาระบุ Google Apps Script Web App URL เพื่ออัปโหลดไฟล์สำรองลงใน Google Drive ของคุณ', 'warning');
+        return;
+      }
+
+      triggerDriveBackupBtn.disabled = true;
+      triggerDriveBackupBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin"></i> กำลังอัปโหลดลง Google Drive...';
+
+      const res = await api.triggerDriveBackup();
+      triggerDriveBackupBtn.disabled = false;
+      triggerDriveBackupBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> สำรองข้อมูลเข้า Google Drive';
+
+      if (res && res.success) {
+        showToast(`สำเร็จ! สร้างไฟล์สำรองใน Google Drive เรียบร้อย (${res.fileName})`, 'success');
+        renderAdminTables();
+      } else {
+        showToast('เกิดข้อผิดพลาดในการอัปโหลดลง Google Drive', 'error');
+      }
+    });
+  }
+
+  // RENDER ADMIN DASHBOARD & HOURS APPROVAL MANAGER
+  function renderAdminTables() {
+    if (!adminTableBody) return;
+    adminTableBody.innerHTML = '';
+
+    const staffUsers = api.getStaffUsers();
+    let pendingHrsCount = 0;
+    let approvedHrsCount = 0;
+
+    currentRegistrations.forEach(r => {
+      if (r.status === 'approved') approvedHrsCount += (r.earnedHours || r.baseHours || 3);
+      else if (r.status === 'pending') pendingHrsCount += (r.baseHours || 3);
+    });
+
+    const actCount = currentActivities.length;
+    const staffCount = staffUsers.length;
+    const regCount = currentRegistrations.length;
+
+    if (adminTotalActCount) adminTotalActCount.textContent = actCount;
+    if (adminTotalStaffCount) adminTotalStaffCount.textContent = staffCount;
+    if (adminTotalRegCount) adminTotalRegCount.textContent = regCount;
+    if (adminTotalPendingHrs) adminTotalPendingHrs.textContent = pendingHrsCount;
+    if (adminTotalApprovedHrs) adminTotalApprovedHrs.textContent = approvedHrsCount;
+
+    const pendingList = currentRegistrations.filter(r => r.status === 'pending');
+
+    if (pendingList.length === 0) {
+      adminTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-gray); padding: 2rem;">🎉 ไม่พบรายการผู้ลงทะเบียนรออนุมัติ (อนุมัติหรือดำเนินการเรียบร้อยแล้วทุกรายการ)</td></tr>`;
+    } else {
+      pendingList.forEach(r => {
+        const isApproved = r.status === 'approved';
+        const isRejected = r.status === 'rejected';
+
+        const row = `
+          <tr>
+            <td><strong style="font-family:'Space Grotesk', monospace;">${r.regId}</strong></td>
+            <td>
+              <div style="font-weight:700; color:var(--text-dark);">${r.staffName}</div>
+              <div style="font-size:0.75rem; color:var(--text-gray);">${r.staffId}</div>
+            </td>
+            <td>${r.major || 'ภาษาอังกฤษเพื่อการสื่อสารธุรกิจ'} <small style="color:var(--text-gray);">(${r.department})</small></td>
+            <td style="max-width: 220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${r.activityTitle}">${r.activityTitle}</td>
+            <td><strong>${r.baseHours || 3} ชม.</strong></td>
+            <td>
+              ${isApproved ? '<span class="status-tag-checked"><i class="fa-solid fa-circle-check"></i> อนุมัติชั่วโมงแล้ว</span>' : isRejected ? '<span style="background:#fee2e2; color:#991b1b; padding:0.2rem 0.6rem; border-radius:4px; font-size:0.75rem; font-weight:600;">ปฏิเสธ</span>' : '<span class="status-tag-pending"><i class="fa-solid fa-clock"></i> รอเจ้าหน้าที่อนุมัติ</span>'}
+            </td>
+            <td>
+              <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+                ${isApproved 
+                  ? `<button class="role-pill-btn unapprove-hrs-btn" data-id="${r.regId}" style="background:#f59e0b; color:white; padding:0.25rem 0.55rem; font-size:0.75rem;" title="ยกเลิกการอนุมัติ ย้อนกลับเป็นรออนุมัติ"><i class="fa-solid fa-rotate-left"></i> ยกเลิกการอนุมัติ</button>` 
+                  : `<button class="role-pill-btn approve-hrs-btn" data-id="${r.regId}" style="background:#16a34a; color:white; padding:0.25rem 0.65rem; font-size:0.75rem;"><i class="fa-solid fa-check"></i> อนุมัติชั่วโมง</button>
+                     <button class="role-pill-btn reject-hrs-btn" data-id="${r.regId}" style="background:#64748b; color:white; padding:0.25rem 0.55rem; font-size:0.75rem;" title="ปฏิเสธรายการ"><i class="fa-solid fa-xmark"></i></button>`}
+                <button class="role-pill-btn delete-reg-admin-btn" data-id="${r.regId}" data-act-id="${r.activityId}" style="background:#ef4444; color:white; padding:0.25rem 0.55rem; font-size:0.75rem;" title="ลบรายการลงทะเบียนนี้"><i class="fa-solid fa-trash"></i> ลบ</button>
+              </div>
+            </td>
+          </tr>
+        `;
+        adminTableBody.insertAdjacentHTML('beforeend', row);
+      });
+
+      document.querySelectorAll('.approve-hrs-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          await api.approveHours(id);
+          showToast(`อนุมัติชั่วโมงกิจกรรมสำเร็จสำหรับรหัส ${id}`, 'success');
+          await loadAllData();
+          renderAdminTables();
+          autoDriveBackup('hours_approval');
+        });
+      });
+
+      document.querySelectorAll('.unapprove-hrs-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          await api.unapproveHours(id);
+          showToast(`ยกเลิกการอนุมัติสำหรับรหัส ${id} เรียบร้อยแล้ว (ย้อนกลับเป็นรออนุมัติ)`, 'info');
+          await loadAllData();
+          renderAdminTables();
+          autoDriveBackup('unapprove_hours');
+        });
+      });
+
+      document.querySelectorAll('.delete-reg-admin-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          const actId = e.currentTarget.getAttribute('data-act-id');
+          if (confirm(`คุณต้องการลบรายการลงทะเบียนรหัส ${id} ใช่หรือไม่?\n(ข้อมูลจะถูกลบออกจากตาราง Google Sheets อัตโนมัติ)`)) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            api.deleteRegistration(id);
+            const act = currentActivities.find(a => a.id === actId);
+            if (act) {
+              act.registeredCount = Math.max(0, (act.registeredCount || 1) - 1);
+              if (act.status === 'full' && act.registeredCount < act.maxQuota) act.status = 'open';
+              api.updateActivity(act.id, act);
+            }
+            showToast(`ลบรายการลงทะเบียน ${id} สำเร็จแล้ว`, 'success');
+            await loadAllData();
+            renderAdminTables();
+            autoDriveBackup('delete_registration');
+          }
+        });
+      });
+
+      document.querySelectorAll('.reject-hrs-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          await api.rejectHours(id);
+          showToast(`ปฏิเสธรายการ ${id} เรียบร้อย`, 'info');
+          await loadAllData();
+          renderAdminTables();
+          autoDriveBackup('hours_rejection');
+        });
+      });
+    }
+
+    if (!backupTableBody) return;
+    const backups = api.getBackups();
+    backupTableBody.innerHTML = '';
+
+    const recentBackups = backups.slice(0, 5);
+    if (recentBackups.length === 0) {
+      backupTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-gray); padding: 1.5rem;">ยังไม่มีประวัติการสำรองข้อมูล</td></tr>`;
+    } else {
+      recentBackups.forEach(b => {
+        backupTableBody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong style="font-family:'Space Grotesk', monospace;">${b.backupId}</strong></td>
+            <td>${b.timestamp}</td>
+            <td>${b.fileName}</td>
+            <td>${b.recordCount} รายการ</td>
+            <td><span style="color:#10b981; font-weight:600;"><i class="fa-solid fa-cloud"></i> จัดเก็บสำเร็จ</span></td>
+          </tr>
+        `);
+      });
+    }
+  }
+
+  // Toast Notifications
+  function showToast(msg, type = 'info') {
+    let c = document.querySelector('.toast-container');
+    if (!c) {
+      c = document.createElement('div');
+      c.className = 'toast-container';
+      document.body.appendChild(c);
+    }
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${msg}</span>`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
 });

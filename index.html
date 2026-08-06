@@ -1,1465 +1,1271 @@
 <!DOCTYPE html>
-<html lang="th" data-theme="light">
+<html lang="th">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SMO-STAFF Official - ระบบลงทะเบียนและสรุปชั่วโมงกิจกรรม</title>
-  <meta name="description"
-    content="ระบบบริการลงทะเบียนเข้าร่วมกิจกรรม และตรวจสอบสรุปชั่วโมงกิจกรรมสะสมรายบุคคล สำหรับผู้ปฏิบัติงานและเจ้าหน้าที่">
-  <link rel="icon" type="image/png"
-    href="https://drive.google.com/thumbnail?id=1pB-8Qn75ZVnzhJhllPLbc0hI8k0jVJ-9&sz=w800">
+  <title>SMO-STAFF Official | ระบบลงทะเบียนและสะสมชั่วโมงกิจกรรมผู้ปฏิบัติงาน</title>
+
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- CSS Stylesheet -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body>
 
-  <!-- Navigation Bar -->
-  <header class="navbar">
-    <div class="navbar-inner">
-      <div class="brand" style="display:flex; align-items:center; gap:10px;">
-        <img src="https://drive.google.com/thumbnail?id=1pB-8Qn75ZVnzhJhllPLbc0hI8k0jVJ-9&sz=w800" alt="SMO Logo"
-          class="brand-logo-img" style="height:40px; width:auto; border-radius:6px; object-fit:contain;">
-        <div style="display:flex; flex-direction:column; gap:2px;">
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <span style="font-weight:700; font-size:1.2rem; color:var(--primary); letter-spacing:-0.2px;">SMO-STAFF
-              Official</span>
-            <span class="live-sync-badge" title="ซิงค์ข้อมูลเรียลไทม์กับ Google Sheets แบบสดทุกอุปกรณ์">
-              <span class="live-sync-dot"></span> เรียลไทม์ (Live Sync)
-            </span>
+  <!-- TOP APP NAVBAR -->
+  <header class="app-navbar">
+    <div class="nav-left">
+      <a href="#" class="brand-wrapper">
+        <img src="https://lh3.googleusercontent.com/d/1pB-8Qn75ZVnzhJhllPLbc0hI8k0jVJ-9" alt="SMO-STAFF Logo"
+          class="brand-emblem">
+        <span class="brand-title">SMO-STAFF Official</span>
+      </a>
+
+      <!-- Realtime Ticking Clock Badge -->
+      <div class="realtime-badge" id="realtimeClockBadge">
+        <span class="realtime-dot"></span>
+        <span>เรียลไทม์ (<span id="clockText">22:09:04</span>)</span>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <!-- Role Switcher Toggle Pill -->
+      <div class="role-switcher-container">
+        <button class="role-pill-btn active" id="roleStaffBtn">ผู้ปฏิบัติงาน</button>
+        <button class="role-pill-btn" id="roleAdminBtn"><i class="fa-solid fa-lock" style="font-size: 0.75rem;"></i>
+          เจ้าหน้าที่ (Admin)</button>
+      </div>
+
+      <!-- User Profile Pill -->
+      <div class="user-profile-pill">
+        <div class="user-avatar-circle" id="navUserAvatar">
+          <i class="fa-solid fa-user-slash"></i>
+        </div>
+        <div>
+          <span class="user-name-text" id="navUserName">กรุณาเข้าสู่ระบบ</span>
+          <span class="user-code-badge" id="navUserCode"></span>
+        </div>
+        <a href="#" class="btn-logout" id="logoutBtn">เข้าสู่ระบบ</a>
+      </div>
+
+      <!-- Theme Switcher Button -->
+      <button class="theme-toggle-btn" title="เปลี่ยนธีม" id="themeToggleBtn">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+
+      <!-- Hamburger Menu Button (Mobile ☰) -->
+      <button class="mobile-menu-toggle-btn" id="mobileMenuToggleBtn" title="เมนูระบบ">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER (HAMBURGER MENU) -->
+  <div class="mobile-nav-backdrop" id="mobileNavBackdrop"></div>
+  <div class="mobile-nav-drawer" id="mobileNavDrawer">
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.85rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 1rem;">
+      <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-dark); margin: 0;"><i class="fa-solid fa-bars"
+          style="color: var(--primary-blue);"></i> เมนูระบบ</h3>
+      <button class="close-btn" id="closeMobileDrawerBtn" style="font-size: 1.5rem; color: #64748b;">&times;</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <div>
+        <label
+          style="font-size: 0.78rem; font-weight: 700; color: var(--text-gray); text-transform: uppercase; margin-bottom: 0.4rem; display: block;">เลือกบทบาทเข้าใช้งาน</label>
+        <div class="role-switcher-container"
+          style="width: 100%; display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px; gap: 4px;">
+          <button class="role-pill-btn active" id="drawerRoleStaffBtn"
+            style="flex: 1; padding: 0.45rem; font-size: 0.82rem; border-radius: 6px;">ผู้ปฏิบัติงาน</button>
+          <button class="role-pill-btn" id="drawerRoleAdminBtn"
+            style="flex: 1; padding: 0.45rem; font-size: 0.82rem; border-radius: 6px;"><i class="fa-solid fa-lock"
+              style="font-size: 0.75rem;"></i> แอดมิน</button>
+        </div>
+      </div>
+
+      <div>
+        <label
+          style="font-size: 0.78rem; font-weight: 700; color: var(--text-gray); text-transform: uppercase; margin-bottom: 0.4rem; display: block;">สถานะผู้ใช้งาน</label>
+        <div
+          style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
+          <div style="overflow: hidden;">
+            <span id="drawerUserName"
+              style="font-weight: 700; font-size: 0.88rem; color: var(--text-dark); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">กรุณาเข้าสู่ระบบ</span>
+            <small id="drawerUserSub"
+              style="color: var(--text-gray); font-size: 0.75rem;">สำหรับผู้ปฏิบัติงาน/แอดมิน</small>
+          </div>
+          <a href="#" class="btn-logout" id="drawerLogoutBtn"
+            style="padding: 0.35rem 0.85rem; font-size: 0.78rem; border-radius: 6px; white-space: nowrap;">เข้าสู่ระบบ</a>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 0.5rem;">
+        <button id="drawerGasBtn"
+          style="width: 100%; text-align: left; padding: 0.65rem 0.85rem; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fa-brands fa-google-drive" style="color: #0f9d58;"></i> เชื่อมต่อ Google Drive
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN PAGE CONTENT -->
+  <main class="main-content-container">
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: ผู้ปฏิบัติงาน (STAFF PORTAL SECTION) -->
+    <!-- =================================================================== -->
+    <section id="staffViewSection">
+
+      <!-- Guest Banner (Shown when not logged in) -->
+      <div class="user-hero-card" id="staffLoggedOutHero"
+        style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; border: 1px solid #334155; display: flex; flex-direction: column; gap: 0.85rem;">
+        <div class="user-hero-left"
+          style="display: flex; flex-direction: row; align-items: center; gap: 0.75rem; width: 100%; min-width: 0;">
+          <div
+            style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #60a5fa; flex-shrink: 0;">
+            <i class="fa-solid fa-user-lock"></i>
+          </div>
+          <div style="flex: 1 1 auto; min-width: 0;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 0.25rem; line-height: 1.35;">
+              กรุณาเข้าสู่ระบบผู้ปฏิบัติงาน</h2>
+            <p style="font-size: 0.82rem; color: #94a3b8; line-height: 1.4; margin: 0;">
+              เข้าสู่ระบบด้วยรหัสนักศึกษาเพื่อดูข้อมูลส่วนบุคคล, เป้าหมายชั่วโมงกิจกรรม และประวัติสะสมชั่วโมงรายบุคคล
+            </p>
+          </div>
+        </div>
+        <div style="width: 100%;">
+          <button class="btn-register" id="openStaffLoginHeroBtn"
+            style="background: #2563eb; width: 100%; min-height: 44px; padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบด้วยรหัสนักศึกษา
+          </button>
+        </div>
+      </div>
+
+      <!-- ส่วนที่ 1: ข้อมูลผู้ปฏิบัติงาน (HERO INFO CARD - SHOWN WHEN LOGGED IN) -->
+      <div class="user-hero-card" id="staffLoggedInHero" style="display: none;">
+        <div class="user-hero-left">
+          <div class="hero-avatar-box" id="staffHeroAvatarBox">
+            <i class="fa-solid fa-user-graduate"></i>
+          </div>
+          <div class="hero-user-details">
+            <h2>
+              <span id="staffFullName">นายอภินันท์ คำดี</span>
+              <span class="hero-code-tag" id="staffCodeTag">673450351-6</span>
+            </h2>
+            <div class="hero-user-subtitle">
+              สาขาวิชา: <strong id="staffMajor">ภาษาอังกฤษเพื่อการสื่อสารธุรกิจ</strong> • ชั้นปี: <strong
+                id="staffYear">ชั้นปีที่ 3</strong>
+            </div>
+            <div class="hero-user-tags">
+              <span class="user-tag-pill" id="staffDept">สังกัด: สโมสรนักศึกษา</span>
+              <span class="user-tag-pill" id="staffPos" style="background:#e0e7ff; color:#3730a3;">ตำแหน่ง:
+                ประธานฝ่ายกิจกรรม</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HOURS STATS COUNTER BOX -->
+        <div class="hours-stats-box">
+          <div class="hours-stat-col">
+            <div class="hours-num" id="accumulatedHours">0</div>
+            <div class="hours-label">ชั่วโมงสะสม</div>
+          </div>
+          <div class="hours-stat-col">
+            <div class="hours-num target" id="targetHoursText">200</div>
+            <div class="hours-label">เป้าหมาย (ชม.)</div>
+          </div>
+          <div class="hours-stat-col">
+            <div class="hours-num pending" id="pendingHours">0</div>
+            <div class="hours-label">ชั่วโมงที่รออนุมัติ</div>
           </div>
         </div>
       </div>
 
-      <div class="nav-controls">
-        <!-- Role Switcher -->
-        <div class="role-switcher">
-          <button class="role-btn active" data-role="worker" id="role-worker-btn">
-            ผู้ปฏิบัติงาน
-          </button>
-          <button class="role-btn" data-role="admin" id="role-admin-btn">
-            เจ้าหน้าที่ (Admin)
-          </button>
+      <!-- ส่วนที่ 2: เนื้อหาและการเก็บชั่วโมงกิจกรรม -->
+      <!-- SUBNAV TABS UNDERLINED -->
+      <div class="tabs-subnav">
+        <a class="subnav-link active" id="tabAllActivities">
+          <i class="fa-solid fa-list"></i> <span>รายการกิจกรรมทั้งหมด</span>
+        </a>
+        <a class="subnav-link" id="tabMySummary">
+          <i class="fa-solid fa-chart-line"></i> <span>สรุปชั่วโมงกิจกรรมของฉัน</span>
+          <span class="subnav-count-badge" id="myRegCountBadge">6</span>
+        </a>
+      </div>
+
+      <!-- SUBVIEW 1: รายการกิจกรรมทั้งหมด (ALL ACTIVITIES CATALOG) -->
+      <div id="subviewAllActivities">
+        <!-- SEARCH & FILTER BAR CARD -->
+        <div class="filter-card-bar">
+          <div class="filter-inputs-group">
+            <input type="text" id="searchInput" class="filter-input filter-search-input"
+              placeholder="ค้นหากิจกรรม, สถานที่, รหัส...">
+
+            <select id="statusFilter" class="filter-input filter-select">
+              <option value="">สถานะทั้งหมด</option>
+              <option value="open">เปิดรับลงทะเบียน</option>
+              <option value="full">เต็มจำนวน</option>
+              <option value="closed">ปิดรับแล้ว</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Student / Worker Auth Status -->
-        <div id="worker-auth-wrapper" style="display:flex; align-items:center; gap:8px;">
-          <button id="worker-login-btn" class="btn btn-primary btn-sm" style="font-size:0.8rem;">
-            เข้าสู่ระบบด้วยรหัสนักศึกษา
-          </button>
+        <!-- ACTIVITIES GRID CARDS -->
+        <div class="activities-grid" id="activitiesGrid">
+          <!-- Dynamic Cards Rendered Here -->
+        </div>
+      </div>
 
-          <div id="worker-session-info" style="display:none; align-items:center; gap:6px;" class="user-selector">
-            <img src="" id="nav-user-avatar" class="user-avatar" alt="Avatar">
-            <span id="nav-user-name-display" style="font-size:0.85rem; font-weight:600;"></span>
-            <button id="worker-logout-btn" class="btn btn-ghost btn-sm" title="ออกจากระบบผู้ปฏิบัติงาน"
-              style="color:var(--danger); padding:2px 6px; font-size:0.75rem;">
-              ออกจากระบบ
+      <!-- SUBVIEW 2: สรุปชั่วโมงกิจกรรมของฉัน (MY HOURS SUMMARY) -->
+      <div id="subviewMySummary" style="display: none;">
+
+        <!-- 4 TOP SUMMARY STATS CARDS -->
+        <div class="summary-stats-grid">
+          <div class="summary-stat-card">
+            <div class="summary-stat-title">ชั่วโมงสะสมที่ได้แล้ว</div>
+            <div class="summary-stat-val val-green">
+              <span id="summaryEarnedHours">2</span> <span class="unit">ชม.</span>
+            </div>
+          </div>
+          <div class="summary-stat-card">
+            <div class="summary-stat-title">เป้าหมายชั่วโมงกิจกรรม</div>
+            <div class="summary-stat-val val-navy">
+              <span id="targetHoursText">-</span> <span class="unit">ชม.</span>
+            </div>
+          </div>
+          <div class="summary-stat-card">
+            <div class="summary-stat-title">ชั่วโมงที่รออนุมัติ</div>
+            <div class="summary-stat-val val-orange">
+              <span id="summaryPendingHours">-</span> <span class="unit">ชม.</span>
+            </div>
+          </div>
+          <div class="summary-stat-card">
+            <div class="summary-stat-title">กิจกรรมที่ลงทะเบียน</div>
+            <div class="summary-stat-val val-purple">
+              <span id="summaryRegisteredCount">-</span> <span class="unit">รายการ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIVITY HOURS METER CARD -->
+        <div class="progress-meter-card">
+          <div class="meter-header">
+            <h3>ความก้าวหน้าการเก็บชั่วโมงกิจกรรม (Activity Hours Meter)</h3>
+            <span class="percentage" id="meterPercentText">-</span>
+          </div>
+          <div class="meter-subtitle" id="meterSubtitleText">เป้าหมายปีงบประมาณ 2026: - ชั่วโมงกิจกรรม</div>
+          <div class="meter-track">
+            <div class="meter-fill" id="meterFillBar" style="width: 1%;">
+              <div class="meter-thumb"></div>
+            </div>
+          </div>
+          <div class="meter-footer">
+            <span id="meterEarnedText">สะสมแล้ว 2 / 200 ชั่วโมง</span>
+            <span id="meterRemainingText">ขาดอีก 198 ชั่วโมง</span>
+          </div>
+        </div>
+
+        <!-- PERSONAL REGISTRATION HISTORY SECTION -->
+        <div class="history-card-header">
+          <div>
+            <h3>ประวัติการลงทะเบียนกิจกรรมและสะสมชั่วโมงรายบุคคล</h3>
+            <p id="historyUserSubtitle"></p>
+          </div>
+          <div>
+            <button class="btn-export-pdf" onclick="window.print()">
+              <i class="fa-solid fa-print"></i> พิมพ์/ส่งออกใบรวบรวมชั่วโมงกิจกรรม
             </button>
           </div>
         </div>
 
-        <!-- Admin Session Info & Logout Button (Visible only when Admin logged in) -->
-        <div id="admin-session-wrapper" class="admin-only" style="display:none; align-items:center; gap:8px;">
-          <span
-            style="font-size:0.8rem; padding:4px 10px; border-radius:12px; background:var(--admin-accent-light); color:var(--admin-accent); font-weight:600; border:1px solid rgba(124, 58, 237, 0.3); display:inline-flex; align-items:center; gap:5px;">
-            🛡️ เจ้าหน้าที่: <strong id="nav-admin-name-display">Super Admin (@admin)</strong>
-          </span>
-          <button id="admin-logout-btn" class="btn btn-danger btn-sm" title="ออกจากระบบเจ้าหน้าที่"
-            style="font-size:0.8rem;">
-            ออกจากระบบเจ้าหน้าที่
-          </button>
-        </div>
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>ชื่อกิจกรรม / หมวดหมู่</th>
+              <th>วันเวลาจัดกิจกรรม</th>
+              <th>ชั่วโมงกิจกรรมฐาน</th>
+              <th>ชั่วโมงที่ได้รับ</th>
+              <th>สถานะ</th>
+              <th>ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <!-- Dynamic History Table Rows Rendered Here -->
+          </tbody>
+        </table>
 
-        <!-- Theme Toggle -->
-        <button id="theme-toggle-btn" class="theme-btn" title="สลับโหมดมืด/สว่าง">
-          โหมดมืด/สว่าง
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Container -->
-  <main class="app-container">
-
-    <!-- Profile Header Banner (Logged-out State) -->
-    <div class="profile-banner" id="profile-banner-logged-out"
-      style="display:none; background:linear-gradient(135deg, rgba(30, 58, 138, 0.06) 0%, rgba(15, 23, 42, 0.04) 100%); border:1px solid #bfdbfe; border-left:5px solid var(--primary);">
-      <div
-        style="display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap; width:100%; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:1rem;">
-          <div>
-            <h3 style="font-size:1.15rem; font-weight:700; color:var(--primary);">
-              เข้าสู่ระบบบริการข้อมูลชั่วโมงกิจกรรมผู้ปฏิบัติงาน (Worker Authentication)</h3>
-            <p style="font-size:0.875rem; color:var(--text-muted);">กรุณาระบุรหัสนักศึกษา/รหัสประจำตัว
-              เพื่อเข้าถึงผลสรุปชั่วโมงสะสม ประวัติการเข้าร่วมกิจกรรม และพิมพ์ใบรายงานผล</p>
-          </div>
-        </div>
-        <button class="btn btn-primary trigger-worker-login-btn">เข้าสู่ระบบด้วยรหัสนักศึกษา</button>
-      </div>
-    </div>
-
-    <!-- Profile Header Banner (Logged-in State) -->
-    <div class="profile-banner" id="profile-banner-logged-in" style="display:none;">
-      <div class="profile-main">
-        <img src="" id="header-user-avatar" class="profile-avatar-lg" alt="User Avatar">
-        <div class="profile-info">
-          <h2>
-            <span id="header-user-name">ชื่อ-นามสกุล ผู้ปฏิบัติงาน</span>
-            <span class="profile-id-badge" id="header-user-id">-</span>
-          </h2>
-          <div class="profile-dept">
-            <span id="header-user-dept">สังกัด/ฝ่าย</span> •
-            <span id="header-user-pos">ตำแหน่ง</span>
-          </div>
-        </div>
       </div>
 
-      <div class="profile-quick-stats">
-        <div class="quick-stat-item">
-          <div class="quick-stat-value success" id="header-stat-hours">0</div>
-          <div class="quick-stat-label">ชั่วโมงสะสม</div>
-        </div>
-        <div class="quick-stat-item"
-          style="border-left:1px solid var(--border-color); border-right:1px solid var(--border-color); padding: 0 1.25rem;">
-          <div class="quick-stat-value primary" id="header-stat-target">30</div>
-          <div class="quick-stat-label">เป้าหมาย (ชม.)</div>
-        </div>
-        <div class="quick-stat-item">
-          <div class="quick-stat-value warning" id="header-stat-pending">0</div>
-          <div class="quick-stat-label">รออนุมัติ (ชม.)</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Navigation Tabs -->
-    <nav class="nav-tabs" id="main-nav-tabs">
-      <button class="tab-btn worker-only active" data-view="view-activities">
-        รายการกิจกรรมทั้งหมด
-      </button>
-      <button class="tab-btn worker-only" data-view="view-my-summary">
-        สรุปชั่วโมงกิจกรรมของฉัน <span class="tab-badge" id="tab-my-regs-count">0</span>
-      </button>
-      <!-- Admin Only Tabs (Hidden by default, shown when Admin mode) -->
-      <button class="tab-btn admin-only" data-view="view-admin-dashboard" style="display:none;">
-        แดชบอร์ดเจ้าหน้าที่
-      </button>
-      <button class="tab-btn admin-only" data-view="view-admin-activities" style="display:none;">
-        จัดการกิจกรรม
-      </button>
-      <button class="tab-btn admin-only" data-view="view-admin-roster" style="display:none;">
-        รายชื่อ & อนุมัติชั่วโมง
-      </button>
-    </nav>
-
-    <!-- VIEW 1: All Activities List (Worker / Guest) -->
-    <section id="view-activities" class="view-section active">
-      <!-- Filter Bar -->
-      <div class="filter-bar" id="activities-filter-bar">
-        <div class="filter-group">
-          <div class="search-input-wrapper">
-            <input type="text" id="search-activity-input" class="search-input"
-              placeholder="ค้นหากิจกรรม, สถานที่, รหัส...">
-          </div>
-          <select id="filter-category-select" class="select-filter" title="กรองตามหมวดหมู่">
-            <option value="all">หมวดหมู่ทั้งหมด</option>
-            <option value="งานอบรม/สัมมนา">งานอบรม/สัมมนา</option>
-            <option value="งานจิตอาสา">งานจิตอาสา</option>
-            <option value="งานบริการสังคม">งานบริการสังคม</option>
-            <option value="งานสนับสนุนองค์กร">งานสนับสนุนองค์กร</option>
-          </select>
-          <select id="filter-status-select" class="select-filter" title="กรองตามสถานะ">
-            <option value="all">สถานะทั้งหมด</option>
-            <option value="open">เปิดรับสมัคร</option>
-            <option value="full">เต็มแล้ว</option>
-            <option value="completed">สิ้นสุดแล้ว</option>
-          </select>
-        </div>
-
-        <div style="display:flex; align-items:center; gap:12px;">
-          <button class="btn btn-admin trigger-add-activity-btn admin-only"
-            style="display:none;">เพิ่มกิจกรรมใหม่</button>
-          <div style="font-size:0.85rem; color:var(--text-muted);">
-            พบ <strong id="activities-count-badge" style="color:var(--primary);">0</strong> กิจกรรม
-          </div>
-        </div>
-      </div>
-
-      <!-- Activity Cards Grid -->
-      <div class="activity-grid" id="activities-cards-grid">
-        <!-- Dynamic Cards Rendered Here -->
-      </div>
-
-      <!-- Locked View for Logged-Out Users -->
-      <div id="activities-locked-container" style="display:none;"></div>
     </section>
 
-    <!-- VIEW 2: My Summary & History -->
-    <section id="view-my-summary" class="view-section">
-      <div id="individual-summary-container">
-        <!-- Dynamic Individual Summary Rendered Here -->
-      </div>
-    </section>
+    <!-- =================================================================== -->
+    <!-- TAB 2: เจ้าหน้าที่ (ADMIN PORTAL SECTION) -->
+    <!-- =================================================================== -->
+    <section id="adminViewSection" style="display: none;">
 
-    <!-- VIEW 3: Admin Overview Dashboard -->
-    <section id="view-admin-dashboard" class="view-section">
-      <!-- Logged-in Admin Profile Banner Card -->
-      <div class="profile-banner"
-        style="background:linear-gradient(135deg, rgba(91, 33, 182, 0.08) 0%, rgba(124, 58, 237, 0.04) 100%); border:1px solid rgba(124, 58, 237, 0.25); border-left:5px solid var(--admin-accent); margin-bottom:1.5rem;">
-        <div
-          style="display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap; width:100%; justify-content:space-between;">
-          <div style="display:flex; align-items:center; gap:1rem;">
-            <div
-              style="width:52px; height:52px; border-radius:50%; background:var(--admin-accent-light); color:var(--admin-accent); display:flex; align-items:center; justify-content:center; font-size:1.75rem; border:2px solid var(--admin-accent);">
-              🛡️</div>
-            <div>
-              <h3
-                style="font-size:1.15rem; font-weight:700; color:var(--admin-accent); display:flex; align-items:center; gap:8px;">
-                <span>ข้อมูลเจ้าหน้าที่ผู้ใช้งาน: <strong id="admin-banner-name">ผู้ดูแลระบบหลัก (Super
-                    Admin)</strong></span>
-                <span class="badge"
-                  style="background:var(--admin-accent-light); color:var(--admin-accent); border:1px solid rgba(124, 58, 237, 0.3); font-size:0.75rem; padding:2px 8px; border-radius:12px;"
-                  id="admin-banner-role">Super Admin</span>
-              </h3>
-              <p style="font-size:0.875rem; color:var(--text-muted); margin-top:2px;">
-                ชื่อผู้ใช้งาน: <strong id="admin-banner-user">@admin</strong> | สังกัด/ฝ่าย: <span
-                  id="admin-banner-dept">ฝ่ายบริหารและเทคโนโลยี</span>
-              </p>
+      <!-- ส่วนที่ 1: ข้อมูลแอดมิน (ADMIN HERO INFO CARD) -->
+      <div class="user-hero-card" style="background: #eef2ff; border-color: #c7d2fe;">
+        <div class="user-hero-left">
+          <div class="hero-avatar-box" id="adminHeroAvatarBox" style="background: #312e81; color: white;">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div class="hero-user-details">
+            <h2>
+              <span id="adminFullName">เจ้าหน้าที่แอดมิน</span>
+              <span class="hero-code-tag" id="adminRoleBadge" style="background: #312e81; color: white;">Admin</span>
+            </h2>
+            <div class="hero-user-subtitle">
+              ตำแหน่ง: <strong id="adminPosition">เจ้าหน้าที่ผู้ดูแลระบบ</strong>
             </div>
           </div>
-          <div style="font-size:0.8rem; color:var(--text-muted); text-align:right;">
-            สถานะสิทธิ์: <span style="color:var(--success); font-weight:bold;">✔ อนุญาตให้จัดการข้อมูล</span>
-          </div>
         </div>
       </div>
 
-      <div class="admin-summary-grid">
-        <div class="metric-card">
-          <div class="metric-data">
-            <h3>กิจกรรมทั้งหมด</h3>
-            <div class="metric-number" id="admin-stat-total-act" style="color:var(--primary);">0</div>
+      <!-- ส่วนที่ 2: สถิติภาพรวมแอดมิน (OVERVIEW STATS DASHBOARD - ALL 5 CARDS ARE CLICKABLE) -->
+      <div class="summary-stats-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 1.75rem;">
+
+        <!-- CARD 1: กิจกรรมทั้งหมด (CLICKABLE) -->
+        <div class="summary-stat-card summary-stat-card-clickable" id="clickActivitiesCard"
+          title="คลิกเพื่อจัดการและดูรายการกิจกรรมทั้งหมด">
+          <div class="summary-stat-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>กิจกรรมทั้งหมด</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; color: #1e3a8a;"></i>
           </div>
+          <div class="summary-stat-val val-navy"><span id="adminTotalActCount">3</span> <span class="unit">รายการ</span>
+          </div>
+          <small style="font-size: 0.7rem; color: #1e3a8a; font-weight: 600; display: block; margin-top: 0.2rem;">🔍
+            คลิกแก้ไข/ลบกิจกรรม</small>
         </div>
-        <div class="metric-card">
-          <div class="metric-data">
-            <h3>ผู้ปฏิบัติงานในระบบ</h3>
-            <div class="metric-number" id="admin-stat-total-workers" style="color:var(--admin-accent);">0</div>
+
+        <!-- CARD 2: ผู้ปฏิบัติงานในระบบ (CLICKABLE) -->
+        <div class="summary-stat-card summary-stat-card-clickable" id="clickStaffListCard"
+          title="คลิกเพื่อดูและจัดการรายชื่อผู้ปฏิบัติงานทั้งหมด">
+          <div class="summary-stat-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>ผู้ปฏิบัติงานในระบบ</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; color: #7c3aed;"></i>
           </div>
+          <div class="summary-stat-val val-purple"><span id="adminTotalStaffCount">2</span> <span class="unit">คน</span>
+          </div>
+          <small style="font-size: 0.7rem; color: #7c3aed; font-weight: 600; display: block; margin-top: 0.2rem;">🔍
+            คลิกแก้ไข/ลบผู้ปฏิบัติงาน</small>
         </div>
-        <div class="metric-card">
-          <div class="metric-data">
-            <h3>การลงทะเบียนทั้งหมด</h3>
-            <div class="metric-number" id="admin-stat-total-regs" style="color:var(--warning);">0</div>
+
+        <!-- CARD 3: ยอดการลงทะเบียน (CLICKABLE) -->
+        <div class="summary-stat-card summary-stat-card-clickable" id="clickRegistrationsCard"
+          title="คลิกเพื่อดูและจัดการยอดการลงทะเบียนทั้งหมด">
+          <div class="summary-stat-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>ยอดการลงทะเบียน</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; color: #2563eb;"></i>
           </div>
+          <div class="summary-stat-val val-blue" style="color:#2563eb;"><span id="adminTotalRegCount">2</span> <span
+              class="unit">รายการ</span></div>
+          <small style="font-size: 0.7rem; color: #2563eb; font-weight: 600; display: block; margin-top: 0.2rem;">🔍
+            คลิกดู/ลบการลงทะเบียน</small>
         </div>
-        <div class="metric-card">
-          <div class="metric-data">
-            <h3>ชั่วโมงกิจกรรมที่อนุมัติแล้ว</h3>
-            <div class="metric-number" id="admin-stat-total-hours" style="color:var(--success);">0</div>
+
+        <!-- CARD 4: ชั่วโมงที่รออนุมัติ (CLICKABLE) -->
+        <div class="summary-stat-card summary-stat-card-clickable" id="clickPendingHoursCard"
+          title="คลิกเพื่อไปยังตารางอนุมัติชั่วโมง">
+          <div class="summary-stat-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>ชั่วโมงที่รออนุมัติ</span>
+            <i class="fa-solid fa-clock" style="font-size: 0.75rem; color: #f59e0b;"></i>
           </div>
+          <div class="summary-stat-val val-orange"><span id="adminTotalPendingHrs">27</span> <span
+              class="unit">ชม.</span></div>
+          <small style="font-size: 0.7rem; color: #f59e0b; font-weight: 600; display: block; margin-top: 0.2rem;">⚡
+            คลิกอนุมัติชั่วโมงสด</small>
+        </div>
+
+        <!-- CARD 5: ชั่วโมงที่อนุมัติแล้ว (CLICKABLE) -->
+        <div class="summary-stat-card summary-stat-card-clickable" id="clickApprovedHoursCard"
+          title="คลิกเพื่อดูประวัติการอนุมัติชั่วโมงทั้งหมด">
+          <div class="summary-stat-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>ชั่วโมงที่อนุมัติแล้ว</span>
+            <i class="fa-solid fa-circle-check" style="font-size: 0.75rem; color: #10b981;"></i>
+          </div>
+          <div class="summary-stat-val val-green"><span id="adminTotalApprovedHrs">2</span> <span
+              class="unit">ชม.</span></div>
+          <small style="font-size: 0.7rem; color: #10b981; font-weight: 600; display: block; margin-top: 0.2rem;">🔍
+            คลิกดูประวัติอนุมัติ</small>
+        </div>
+
+      </div>
+
+      <!-- ส่วนที่ 3: เมนูดำเนินการด่วนสำหรับเจ้าหน้าที่ (QUICK ADMIN ACTIONS) -->
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.85rem; color: var(--primary-navy);">
+        <i class="fa-solid fa-bolt" style="color: var(--warning-orange);"></i> เมนูดำเนินการด่วนสำหรับเจ้าหน้าที่ (Quick
+        Admin Actions)
+      </h3>
+      <div class="quick-actions-grid">
+        <div class="quick-action-card" id="quickAddActBtn">
+          <div class="quick-action-icon" style="background: #eff6ff; color: #2563eb;"><i
+              class="fa-solid fa-plus-circle"></i></div>
+          <div class="quick-action-title">เพิ่มกิจกรรมใหม่</div>
+        </div>
+        <div class="quick-action-card" id="quickAddStaffBtn">
+          <div class="quick-action-icon" style="background: #f0fdf4; color: #16a34a;"><i
+              class="fa-solid fa-user-plus"></i></div>
+          <div class="quick-action-title">เพิ่มผู้ปฏิบัติงานใหม่</div>
+        </div>
+        <div class="quick-action-card" id="quickAddAdminBtn">
+          <div class="quick-action-icon" style="background: #f5f3ff; color: #7c3aed;"><i
+              class="fa-solid fa-user-shield"></i></div>
+          <div class="quick-action-title">เพิ่มแอดมินใหม่</div>
+        </div>
+        <div class="quick-action-card" id="quickListAdminBtn">
+          <div class="quick-action-icon" style="background: #fff7ed; color: #ea580c;"><i
+              class="fa-solid fa-address-book"></i></div>
+          <div class="quick-action-title">รายชื่อแอดมินทั้งหมด</div>
+        </div>
+        <div class="quick-action-card" id="quickConnectGasBtn">
+          <div class="quick-action-icon" style="background: #ecfeff; color: #0891b2;"><i class="fa-solid fa-link"></i>
+          </div>
+          <div class="quick-action-title">เชื่อมต่อ Google Sheets</div>
+        </div>
+        <div class="quick-action-card" id="quickExportCsvBtn">
+          <div class="quick-action-icon" style="background: #fdf2f8; color: #db2777;"><i
+              class="fa-solid fa-file-csv"></i></div>
+          <div class="quick-action-title">ส่งออกรายงาน CSV</div>
         </div>
       </div>
 
-      <!-- Admin Quick Action Card -->
-      <div class="hours-progress-card" style="margin-bottom:1.5rem;">
-        <h3 style="font-size:1.15rem; font-weight:600; margin-bottom:0.75rem;">เมนูดำเนินการด่วนสำหรับเจ้าหน้าที่ (Quick
-          Admin Actions)</h3>
-        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-          <button class="btn btn-admin" id="admin-add-activity-btn">เพิ่มกิจกรรมใหม่</button>
-          <button class="btn btn-outline" id="admin-add-worker-btn">เพิ่มผู้ปฏิบัติงานใหม่</button>
-          <button class="btn btn-admin" id="admin-add-officer-btn">เพิ่มแอดมิน/เจ้าหน้าที่ใหม่</button>
-          <button class="btn btn-outline" id="admin-view-officers-btn">รายชื่อแอดมินทั้งหมด</button>
-          <button class="btn btn-outline" id="admin-google-sheet-settings-btn"
-            style="border-color:#16a34a; color:#15803d; font-weight:600;">เชื่อมต่อ Google Sheets</button>
-          <button class="btn btn-outline" id="export-csv-btn">ส่งออกรายงาน CSV</button>
-        </div>
+      <!-- ส่วนที่ 4: แดชบอร์ดเจ้าหน้าที่จัดการกิจกรรม รายชื่อ & อนุมัติชั่วโมง -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"
+        id="adminApprovalSection">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--primary-navy);">
+          <i class="fa-solid fa-user-check"></i> แดชบอร์ดเจ้าหน้าที่จัดการกิจกรรม รายชื่อ & อนุมัติชั่วโมง
+        </h3>
+        <button class="btn-register" id="triggerDriveBackupBtn"
+          style="background: #10b981; width: auto; padding: 0.45rem 1rem;">
+          <i class="fa-solid fa-cloud-arrow-up"></i> สำรองข้อมูลเข้า Google Drive
+        </button>
       </div>
-    </section>
 
-    <!-- VIEW 4: Admin Manage Activities (CRUD Table) -->
-    <section id="view-admin-activities" class="view-section">
-      <div class="summary-table-section">
-        <div class="section-header-bar">
-          <div>
-            <h3 style="font-size:1.1rem; font-weight:600;">ตารางรายการกิจกรรม (Manage Activities)</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted);">เจ้าหน้าที่สามารถเพิ่ม แก้ไข ลบ
-              และจัดการรายชื่อผู้ลงทะเบียนในแต่ละกิจกรรมได้</p>
-          </div>
-          <button class="btn btn-admin" id="admin-add-activity-btn-2">เพิ่มกิจกรรมใหม่</button>
-        </div>
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width:40px; text-align:center;">#</th>
-                <th>ชื่อกิจกรรม / หมวดหมู่</th>
-                <th>วันเวลาจัดกิจกรรม</th>
-                <th style="text-align:center;">ชั่วโมงกิจกรรม</th>
-                <th style="text-align:center;">ผู้ลงทะเบียน / ที่นั่ง</th>
-                <th style="text-align:center;">สถานะ</th>
-                <th style="text-align:center; width:220px;">การจัดการ</th>
-              </tr>
-            </thead>
-            <tbody id="admin-activities-table-body">
-              <!-- Dynamic Rows Rendered Here -->
-            </tbody>
-          </table>
-        </div>
+      <!-- REGISTRATION & HOURS APPROVAL DATA TABLE -->
+      <div class="table-responsive" style="margin-bottom: 2rem;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>รหัสลงทะเบียน</th>
+              <th>ผู้ปฏิบัติงาน</th>
+              <th>สาขา / สังกัด</th>
+              <th>กิจกรรมที่ลงทะเบียน</th>
+              <th>ชั่วโมงฐาน</th>
+              <th>สถานะอนุมัติ</th>
+              <th>ดำเนินการ / อนุมัติชั่วโมง</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <!-- Dynamic Approval Rows Rendered Here -->
+          </tbody>
+        </table>
       </div>
-    </section>
 
-    <!-- VIEW 5: Admin Roster & Hours Approval -->
-    <section id="view-admin-roster" class="view-section">
-      <div class="summary-table-section">
-        <div class="section-header-bar">
-          <div>
-            <h3 style="font-size:1.1rem; font-weight:600;">รายชื่อผู้ปฏิบัติงานและการตรวจสอบชั่วโมงกิจกรรม (Roster &
-              Verification)</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted);">ตรวจสอบสถานะการเก็บชั่วโมงกิจกรรมรายบุคคล
-              และเพิ่มเข้าร่วมกิจกรรม</p>
-          </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-admin" id="trigger-import-excel-btn">นำเข้าไฟล์ Excel / CSV</button>
-            <button class="btn btn-outline" id="download-template-csv-btn">แม่แบบ CSV</button>
-            <button class="btn btn-outline" id="admin-add-worker-btn-2">เพิ่มรายคน</button>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width:40px; text-align:center;">#</th>
-                <th>ชื่อ-นามสกุล / รหัส</th>
-                <th>สังกัด / ตำแหน่ง</th>
-                <th style="text-align:center;">ชั่วโมงสะสม / เป้าหมาย</th>
-                <th style="text-align:center;">สถานะเป้าหมาย</th>
-                <th style="text-align:center;">การดำเนินการ</th>
-              </tr>
-            </thead>
-            <tbody id="admin-roster-table-body">
-              <!-- Dynamic Rows Rendered Here -->
-            </tbody>
-          </table>
-        </div>
+      <!-- BACKUP HISTORY TABLE -->
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem;"><i class="fa-solid fa-history" style="color: #0284c7;"></i>
+        ประวัติการสำรองข้อมูล (Google Drive Backup Logs - แสดง 5 รายการล่าสุด)</h3>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>รหัส Backup</th>
+              <th>เวลาสำรอง</th>
+              <th>ชื่อไฟล์</th>
+              <th>จำนวนรายการ</th>
+              <th>สถานะ Google Drive</th>
+            </tr>
+          </thead>
+          <tbody id="backupTableBody">
+            <!-- Dynamic Backup Rows -->
+          </tbody>
+        </table>
       </div>
+
     </section>
 
   </main>
 
-  <!-- ================= MODALS CONTAINER ================= -->
+  <!-- =================================================================== -->
+  <!-- MODALS SECTION -->
+  <!-- =================================================================== -->
 
-  <!-- Modal 1: Activity Details Modal -->
-  <div class="modal-backdrop" id="activity-details-modal">
-    <div class="modal-content">
+  <!-- MODAL 1: STAFF STUDENT ID LOGIN -->
+  <div class="modal-backdrop" id="staffLoginModal">
+    <div class="modal-content" style="max-width: 420px;">
       <div class="modal-header">
-        <h3 class="modal-title" id="details-act-title">รายละเอียดกิจกรรม</h3>
-        <button class="modal-close-btn" data-close-modal="activity-details-modal">✕</button>
+        <h3><i class="fa-solid fa-user-graduate" style="color: var(--primary-blue);"></i> เข้าสู่ระบบผู้ปฏิบัติงาน</h3>
+        <button class="close-btn" id="closeStaffLoginModalBtn">&times;</button>
       </div>
-      <div class="modal-body" id="details-act-body">
-        <!-- Dynamic Details Content -->
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" data-close-modal="activity-details-modal">ปิด</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal 2: Add / Edit Activity Form Modal -->
-  <div class="modal-backdrop" id="activity-form-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title" id="act-form-modal-title">เพิ่มกิจกรรมใหม่</h3>
-        <button class="modal-close-btn" data-close-modal="activity-form-modal">✕</button>
-      </div>
-      <form id="activity-form">
-        <input type="hidden" id="act-form-id" value="">
-        <div class="modal-body">
-          <div class="form-group full-width">
-            <label class="form-label" for="act-form-title">ชื่อกิจกรรม <span
-                style="color:var(--danger);">*</span></label>
-            <input type="text" id="act-form-title" class="form-control" required
-              placeholder="เช่น อบรมเชิงปฏิบัติการ AI สำหรับการทำงาน">
-          </div>
-
-          <div class="form-group full-width">
-            <label class="form-label" for="act-form-desc">รายละเอียดกิจกรรม</label>
-            <textarea id="act-form-desc" class="form-control"
-              placeholder="ระบุรายละเอียด วัตถุประสงค์ และสิ่งที่ได้รับ"></textarea>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <label class="form-label" for="act-form-category">หมวดหมู่ <span
-                    style="color:var(--danger);">*</span></label>
-                <button type="button" id="add-new-category-btn" class="btn btn-ghost btn-sm"
-                  style="font-size:0.75rem; color:var(--primary); padding:0;">
-                  เพิ่มหมวดหมู่ใหม่
-                </button>
-              </div>
-              <select id="act-form-category" class="form-control" required>
-                <!-- Dynamic categories populated via JS -->
-              </select>
-              <input type="text" id="act-form-new-category-input" class="form-control"
-                placeholder="พิมพ์ชื่อหมวดหมู่ใหม่..." style="display:none; margin-top:6px;">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="act-form-hours">ชั่วโมงกิจกรรม (ชั่วโมง) <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="number" id="act-form-hours" class="form-control" min="1" max="50" step="0.5" required
-                value="3">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="act-form-date">วันที่จัดกิจกรรม <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="date" id="act-form-date" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="act-form-time">เวลา <span style="color:var(--danger);">*</span></label>
-              <input type="text" id="act-form-time" class="form-control" placeholder="เช่น 09:00 - 16:00 น." required>
-            </div>
-
-            <div class="form-group full-width">
-              <label class="form-label" for="act-form-location">สถานที่จัดกิจกรรม <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="text" id="act-form-location" class="form-control" required
-                placeholder="เช่น ห้องประชุมใหญ่ ชั้น 4">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="act-form-capacity">จำนวนที่รับสมัคร (คน) <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="number" id="act-form-capacity" class="form-control" min="1" required value="30">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="act-form-status">สถานะกิจกรรม</label>
-              <select id="act-form-status" class="form-control">
-                <option value="open">เปิดรับสมัคร</option>
-                <option value="full">เต็มแล้ว</option>
-                <option value="completed">เสร็จสิ้นกิจกรรม</option>
-              </select>
-            </div>
-
-            <div class="form-group full-width">
-              <label class="form-label" for="act-form-banner">รูปภาพ Banner กิจกรรม (อัปโหลดรูปภาพขนาดเท่าไหร่ก็ได้
-                หรือระบุ URL)</label>
-              <div style="display:flex; flex-direction:column; gap:6px;">
-                <input type="file" id="act-form-banner-file" accept="image/*" class="form-control"
-                  style="background:var(--bg-surface);">
-                <input type="url" id="act-form-banner" class="form-control"
-                  placeholder="https://images.unsplash.com/... หรือใส่ URL รูปภาพ">
-              </div>
-              <div id="act-form-banner-preview-box"
-                style="margin-top:8px; display:none; text-align:center; background:var(--bg-main); padding:8px; border-radius:var(--radius-md); border:1px dashed var(--border-color);">
-                <small style="color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">ตัวอย่าง
-                  Banner ที่เลือก:</small>
-                <img id="act-form-banner-preview-img" src=""
-                  style="max-height:140px; max-width:100%; border-radius:var(--radius-md); object-fit:cover; border:1px solid var(--border-color);"
-                  alt="Banner Preview">
-              </div>
-            </div>
-
-            <div class="form-group full-width"
-              style="background:var(--admin-accent-light); padding:0.75rem 1rem; border-radius:var(--radius-md); border:1px dashed var(--admin-accent);">
-              <label
-                style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:500; cursor:pointer; color:var(--text-main);">
-                <input type="checkbox" id="act-form-auto-enroll" checked
-                  style="width:18px; height:18px; accent-color:var(--admin-accent);">
-                <span>ลงทะเบียนผู้ปฏิบัติงานที่มีอยู่ทุกคนเข้าร่วมกิจกรรมนี้
-                  และปรับเพิ่มชั่วโมงสะสม/เป้าหมายให้อัตโนมัติ</span>
-              </label>
-            </div>
-          </div>
+      <form id="staffLoginForm">
+        <div class="form-group">
+          <label class="form-label" for="loginStudentId">รหัสนักศึกษา / รหัสผู้ปฏิบัติงาน <span
+              style="color:red">*</span></label>
+          <input type="text" class="form-control" id="loginStudentId" placeholder="ตัวอย่าง: 673450351-6" required>
+          <small
+            style="color: var(--text-gray); margin-top: 0.35rem; display: block;">กรอกรหัสนักศึกษาเพื่อดึงข้อมูลและชั่วโมงสะสม</small>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="activity-form-modal">ยกเลิก</button>
-          <button type="submit" class="btn btn-admin">บันทึกกิจกรรม</button>
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register">
+            <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบผู้ปฏิบัติงาน
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal 3: Add Worker Form Modal -->
-  <div class="modal-backdrop" id="worker-form-modal">
-    <div class="modal-content">
+  <!-- MODAL 2: ADMIN USERNAME/PASSWORD LOGIN -->
+  <div class="modal-backdrop" id="adminLoginModal">
+    <div class="modal-content" style="max-width: 440px;">
       <div class="modal-header">
-        <h3 class="modal-title">เพิ่มผู้ปฏิบัติงานใหม่เข้าสู่ระบบ</h3>
-        <button class="modal-close-btn" data-close-modal="worker-form-modal">✕</button>
-      </div>
-      <form id="worker-form">
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label" for="worker-form-id">รหัสนักศึกษา / รหัสผู้ปฏิบัติงาน</label>
-              <input type="text" id="worker-form-id" class="form-control"
-                placeholder="เช่น 663450001-2 (สร้างให้อัตโนมัติหากเว้นว่าง)">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="worker-form-name">ชื่อ-นามสกุล <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="text" id="worker-form-name" class="form-control" required
-                placeholder="เช่น นายประเสริฐ สุขใจ">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="worker-form-nickname">ชื่อเล่น</label>
-              <input type="text" id="worker-form-nickname" class="form-control" placeholder="เช่น เสริฐ">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="worker-form-year">ชั้นปี</label>
-              <select id="worker-form-year" class="form-control">
-                <option value="ชั้นปีที่ 1">ชั้นปีที่ 1</option>
-                <option value="ชั้นปีที่ 2">ชั้นปีที่ 2</option>
-                <option value="ชั้นปีที่ 3">ชั้นปีที่ 3</option>
-                <option value="ชั้นปีที่ 4">ชั้นปีที่ 4</option>
-                <option value="ชั้นปีที่ 5 ขึ้นไป">ชั้นปีที่ 5 ขึ้นไป</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="worker-form-dept">สาขาวิชา / สังกัด <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="text" id="worker-form-dept" class="form-control" required
-                placeholder="เช่น สาขาวิชาเทคโนโลยีสารสนเทศ">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="worker-form-pos">ตำแหน่ง</label>
-              <input type="text" id="worker-form-pos" class="form-control"
-                placeholder="เช่น ผู้ปฏิบัติงาน / คณะกรรมการ">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="worker-form-email">อีเมล</label>
-              <input type="email" id="worker-form-email" class="form-control" placeholder="email@org.mail">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="worker-form-target">เป้าหมายชั่วโมงกิจกรรม (ชม.)</label>
-              <input type="number" id="worker-form-target" class="form-control" value="30" min="1">
-            </div>
-            <div class="form-group full-width">
-              <label class="form-label" for="worker-form-avatar">รูปภาพโปรไฟล์ (เลือกไฟล์จากเครื่อง หรือระบุ
-                URL)</label>
-              <div style="display:flex; flex-direction:column; gap:6px;">
-                <input type="file" id="worker-form-avatar-file" accept="image/*" class="form-control"
-                  style="background:var(--bg-surface);">
-                <input type="url" id="worker-form-avatar" class="form-control"
-                  placeholder="https://drive.google.com/file/d/... หรือระบุ URL รูปภาพ">
-              </div>
-              <div id="worker-form-avatar-preview-box"
-                style="margin-top:8px; display:none; text-align:center; background:var(--bg-main); padding:8px; border-radius:var(--radius-md); border:1px dashed var(--border-color);">
-                <small
-                  style="color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">ตัวอย่างรูปโปรไฟล์:</small>
-                <img id="worker-form-avatar-preview-img" src=""
-                  style="width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);"
-                  alt="Avatar Preview">
-              </div>
-            </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div
+            style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-dark);">เข้าสู่ระบบเจ้าหน้าที่ (Admin)
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-gray);">ระบุยูสเซอร์เนมและรหัสผ่านเจ้าหน้าที่</p>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="worker-form-modal">ยกเลิก</button>
-          <button type="submit" class="btn btn-admin">บันทึกผู้ปฏิบัติงาน</button>
+        <button class="close-btn" id="closeAdminLoginModalBtn">&times;</button>
+      </div>
+
+      <form id="adminLoginForm" style="margin-top: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="adminUsernameInput">ชื่อผู้ใช้งาน (Username) <span
+              style="color:red">*</span></label>
+          <input type="text" class="form-control" id="adminUsernameInput" placeholder="admin" required value="admin">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="adminPasswordInput">รหัสผ่าน (Password) <span
+              style="color:red">*</span></label>
+          <div style="position: relative;">
+            <input type="password" class="form-control" id="adminPasswordInput" placeholder="admin123" required
+              value="admin123" style="padding-right: 2.5rem;">
+            <button type="button" id="togglePasswordBtn"
+              style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-gray); cursor: pointer;">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register" style="background: #1e293b; width: 100%;">
+            <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบเจ้าหน้าที่
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal 12: Edit Worker Profile Modal -->
-  <div class="modal-backdrop" id="edit-worker-modal">
+  <!-- MODAL 3: ADD NEW STAFF USER -->
+  <div class="modal-backdrop" id="addStaffModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">แก้ไขข้อมูลผู้ปฏิบัติงาน</h3>
-        <button class="modal-close-btn" data-close-modal="edit-worker-modal">✕</button>
+        <h3><i class="fa-solid fa-user-plus" style="color: #16a34a;"></i> เพิ่มผู้ปฏิบัติงานใหม่</h3>
+        <button class="close-btn" id="closeAddStaffModalBtn">&times;</button>
       </div>
-      <form id="edit-worker-form">
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label" for="edit-worker-id">รหัสผู้ปฏิบัติงาน / รหัสนักศึกษา</label>
-              <input type="text" id="edit-worker-id" class="form-control" readonly
-                style="background:var(--bg-main); font-weight:600; opacity:0.8;">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="edit-worker-name">ชื่อ-นามสกุล <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="text" id="edit-worker-name" class="form-control" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="edit-worker-nickname">ชื่อเล่น</label>
-              <input type="text" id="edit-worker-nickname" class="form-control" placeholder="เช่น เสริฐ">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="edit-worker-year">ชั้นปี</label>
-              <select id="edit-worker-year" class="form-control">
-                <option value="ชั้นปีที่ 1">ชั้นปีที่ 1</option>
-                <option value="ชั้นปีที่ 2">ชั้นปีที่ 2</option>
-                <option value="ชั้นปีที่ 3">ชั้นปีที่ 3</option>
-                <option value="ชั้นปีที่ 4">ชั้นปีที่ 4</option>
-                <option value="ชั้นปีที่ 5 ขึ้นไป">ชั้นปีที่ 5 ขึ้นไป</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="edit-worker-dept">สาขาวิชา / สังกัด <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="text" id="edit-worker-dept" class="form-control" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="edit-worker-pos">ตำแหน่ง</label>
-              <input type="text" id="edit-worker-pos" class="form-control">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="edit-worker-email">อีเมล</label>
-              <input type="email" id="edit-worker-email" class="form-control">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="edit-worker-target">เป้าหมายชั่วโมงกิจกรรม (ชม.)</label>
-              <input type="number" id="edit-worker-target" class="form-control" min="1">
-            </div>
-            <div class="form-group full-width">
-              <label class="form-label" for="edit-worker-avatar">รูปภาพโปรไฟล์ (เลือกไฟล์จากเครื่อง หรือระบุ
-                URL)</label>
-              <div style="display:flex; flex-direction:column; gap:6px;">
-                <input type="file" id="edit-worker-avatar-file" accept="image/*" class="form-control"
-                  style="background:var(--bg-surface);">
-                <input type="url" id="edit-worker-avatar" class="form-control"
-                  placeholder="https://drive.google.com/file/d/... หรือระบุ URL รูปภาพ">
-              </div>
-              <div id="edit-worker-avatar-preview-box"
-                style="margin-top:8px; display:none; text-align:center; background:var(--bg-main); padding:8px; border-radius:var(--radius-md); border:1px dashed var(--border-color);">
-                <small
-                  style="color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">ตัวอย่างรูปโปรไฟล์:</small>
-                <img id="edit-worker-avatar-preview-img" src=""
-                  style="width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);"
-                  alt="Avatar Preview">
-              </div>
-            </div>
-          </div>
+      <form id="addStaffForm">
+        <div class="form-group">
+          <label class="form-label">รหัสนักศึกษา / รหัสผู้ปฏิบัติงาน <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="newStaffId" placeholder="673450xxx-x" required>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="edit-worker-modal">ยกเลิก</button>
-          <button type="submit" class="btn btn-admin">บันทึกการแก้ไข</button>
+        <div class="form-group">
+          <label class="form-label">ชื่อ - นามสกุล <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="newStaffName" placeholder="นาย/นางสาว..." required>
         </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 4: Manage Activity Roster & Attendance Approval Modal -->
-  <div class="modal-backdrop" id="activity-roster-modal">
-    <div class="modal-content" style="max-width:800px;">
-      <div class="modal-header">
-        <div>
-          <h3 class="modal-title" id="roster-modal-act-title">รายชื่อผู้สมัครเข้าร่วมกิจกรรม</h3>
-          <small style="color:var(--text-muted);"
-            id="roster-modal-act-subtitle">เช็คชื่อและอนุมัติชั่วโมงกิจกรรม</small>
-        </div>
-        <button class="modal-close-btn" data-close-modal="activity-roster-modal">✕</button>
-      </div>
-      <div class="modal-body" style="padding:1rem;">
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width:40px; text-align:center;">#</th>
-                <th>รหัสนักศึกษา / ชื่อ-สกุล (ชื่อเล่น)</th>
-                <th>ชั้นปี & สาขาวิชา / สังกัด</th>
-                <th style="text-align:center;">ชั่วโมงกิจกรรม</th>
-                <th style="text-align:center;">ผลการเข้าร่วม / อนุมัติ</th>
-              </tr>
-            </thead>
-            <tbody id="roster-modal-table-body">
-              <!-- Dynamic Roster Rows -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" data-close-modal="activity-roster-modal">ปิดหน้าต่าง</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal 5: Manual Register Worker to Activity Modal -->
-  <div class="modal-backdrop" id="manual-register-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title">เพิ่มผู้ปฏิบัติงานเข้าร่วมกิจกรรม</h3>
-        <button class="modal-close-btn" data-close-modal="manual-register-modal">✕</button>
-      </div>
-      <form id="manual-register-form">
-        <input type="hidden" id="manual-reg-worker-id" value="">
-        <div class="modal-body">
-          <p style="margin-bottom:1rem; font-size:0.9rem;" id="manual-reg-worker-info">ผู้ปฏิบัติงาน: </p>
+        <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="manual-reg-act-select">เลือกกิจกรรมที่ต้องการเพิ่มเข้าร่วม <span
-                style="color:var(--danger);">*</span></label>
-            <select id="manual-reg-act-select" class="form-control" required>
-              <!-- Dynamic Open Activities Options -->
+            <label class="form-label">สาขาวิชา <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="newStaffMajor" placeholder="ภาษาอังกฤษเพื่อการสื่อสารธุรกิจ"
+              required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ชั้นปี <span style="color:red">*</span></label>
+            <select class="form-select" id="newStaffYear" required>
+              <option value="ชั้นปีที่ 1">ชั้นปีที่ 1</option>
+              <option value="ชั้นปีที่ 2">ชั้นปีที่ 2</option>
+              <option value="ชั้นปีที่ 3" selected>ชั้นปีที่ 3</option>
+              <option value="ชั้นปีที่ 4">ชั้นปีที่ 4</option>
             </select>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="manual-register-modal">ยกเลิก</button>
-          <button type="submit" class="btn btn-admin">ยืนยันการเพิ่มเข้าร่วม</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 0: Student / Worker Login Modal -->
-  <div class="modal-backdrop" id="worker-login-modal">
-    <div class="modal-content" style="max-width:460px;">
-      <div class="modal-header" style="background:var(--primary-light); border-bottom:1px solid var(--primary-border);">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div>
-            <h3 class="modal-title" style="color:var(--primary);">เข้าสู่ระบบผู้ปฏิบัติงาน / นักศึกษา</h3>
-            <small style="color:var(--text-muted);">กรุณาระบุรหัสนักศึกษา หรือรหัสผู้ปฏิบัติงาน</small>
-          </div>
-        </div>
-        <button class="modal-close-btn" data-close-modal="worker-login-modal">✕</button>
-      </div>
-      <form id="worker-login-form">
-        <div class="modal-body">
+        <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="worker-student-id">รหัสนักศึกษา / รหัสผู้ปฏิบัติงาน <span
-                style="color:var(--danger);">*</span></label>
-            <input type="text" id="worker-student-id" class="form-control" placeholder="เช่น STF-1001 หรือ 65010001"
-              required autofocus style="font-size:1.05rem; text-transform:uppercase;">
-          </div>
-
-          <div
-            style="background:var(--primary-light); border:1px dashed var(--primary-border); padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.8rem; color:var(--text-muted); margin-top:1.25rem;">
-            <strong>หมายเหตุ:</strong> สามารถพิมพ์รหัสนักศึกษา/รหัสผู้ปฏิบัติงานของคุณเพื่อเข้าสู่ระบบ (เช่น
-            <code>66010088</code>)
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="worker-login-modal">ยกเลิก</button>
-          <button type="submit" class="btn btn-primary">เข้าสู่ระบบด้วยรหัสนักศึกษา</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 6: Officer / Admin Login Modal -->
-  <div class="modal-backdrop" id="admin-login-modal">
-    <div class="modal-content" style="max-width:440px;">
-      <div class="modal-header"
-        style="background:var(--admin-accent-light); border-bottom:1px solid rgba(124, 58, 237, 0.2);">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div>
-            <h3 class="modal-title" style="color:var(--admin-accent);">เข้าสู่ระบบเจ้าหน้าที่ (Officer Login)</h3>
-            <small style="color:var(--text-muted);">กรุณาระบุรหัสผ่านเพื่อสิทธิ์จัดการกิจกรรม</small>
-          </div>
-        </div>
-        <button class="modal-close-btn" data-close-modal="admin-login-modal">✕</button>
-      </div>
-      <form id="admin-login-form">
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label" for="admin-username">ชื่อผู้ใช้งานเจ้าหน้าที่ / รหัสประจำตัว</label>
-            <input type="text" id="admin-username" class="form-control" placeholder="admin" value="admin" required>
+            <label class="form-label">สังกัด <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="newStaffDept" placeholder="สโมสรนักศึกษา" required>
           </div>
           <div class="form-group">
-            <label class="form-label" for="admin-password">รหัสผ่าน / PIN เจ้าหน้าที่ <span
-                style="color:var(--danger);">*</span></label>
-            <input type="password" id="admin-password" class="form-control" placeholder="••••••••" required autofocus>
-          </div>
-
-          <div
-            style="background:var(--admin-accent-light); border:1px dashed var(--admin-accent); padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.825rem; color:var(--text-muted); margin-top:0.75rem;">
-            <strong>คำแนะนำสำหรับทดลองระบบ:</strong><br>
-            • รหัสผ่านทดสอบ: <code
-              style="background:var(--bg-surface); padding:2px 6px; border-radius:4px; font-weight:bold; color:var(--admin-accent);">admin123</code>
-            หรือ <code
-              style="background:var(--bg-surface); padding:2px 6px; border-radius:4px; font-weight:bold; color:var(--admin-accent);">123456</code>
+            <label class="form-label">ตำแหน่ง <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="newStaffPos" placeholder="ประธานฝ่ายกิจกรรม" required>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="admin-login-modal">ยกเลิก</button>
-          <button type="submit" class="btn btn-admin">เข้าสู่ระบบเจ้าหน้าที่</button>
+
+        <div class="form-group">
+          <label class="form-label">เป้าหมายชั่วโมงกิจกรรมสะสม (TargetHours)</label>
+          <input type="number" class="form-control" id="newStaffTargetHours" value="200" min="1" required placeholder="200">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"><i class="fa-brands fa-google-drive" style="color:#0f9d58;"></i> URL
+            ลิงก์รูปโปรไฟล์ผู้ปฏิบัติงาน (รองรับ Google Drive)</label>
+          <input type="url" class="form-control" id="newStaffAvatar"
+            placeholder="https://drive.google.com/file/d/... หรือ URL รูปภาพทั่วไป">
+          <small style="color: var(--text-gray); margin-top: 0.35rem; display: block;">
+            💡 สามารถวางลิงก์แชร์จาก Google Drive ได้โดยตรง ระบบจะแปลงเป็นลิงก์แสดงรูปโปรไฟล์ให้อัตโนมัติ
+          </small>
+          <div id="staffAvatarPreviewBox" style="display: none; margin-top: 0.5rem; text-align: center;">
+            <img id="staffAvatarImgPreview" src="" alt="Avatar Preview"
+              style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #16a34a;">
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register" style="background: #16a34a;">
+            <i class="fa-solid fa-plus"></i> บันทึกเพิ่มผู้ปฏิบัติงาน
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal 7: Excel / CSV Import Roster Modal -->
-  <div class="modal-backdrop" id="excel-import-modal">
-    <div class="modal-content" style="max-width:680px;">
-      <div class="modal-header"
-        style="background:var(--admin-accent-light); border-bottom:1px solid rgba(124, 58, 237, 0.2);">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div>
-            <h3 class="modal-title" style="color:var(--admin-accent);">นำเข้ารายชื่อผู้ปฏิบัติงานผ่านไฟล์ Excel / CSV
-            </h3>
-            <small style="color:var(--text-muted);">เลือกไฟล์ CSV หรือ Excel
-              เพื่อเพิ่มรายชื่อผู้ปฏิบัติงานเข้าสู่ระบบแบบกลุ่ม</small>
-          </div>
-        </div>
-        <button class="modal-close-btn" data-close-modal="excel-import-modal">✕</button>
-      </div>
-      <div class="modal-body">
-        <!-- File Drop / Select Area -->
-        <div
-          style="border:2px dashed var(--admin-accent); background:var(--bg-main); border-radius:var(--radius-lg); padding:2rem; text-align:center; margin-bottom:1.25rem;">
-          <h4 style="margin-bottom:0.4rem;">เลือกไฟล์ หรือ ลากไฟล์ CSV มาวางที่นี่</h4>
-          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">รองรับไฟล์รูปแบบ .csv หรือ .txt
-            (เข้ารหัส UTF-8)</p>
-          <input type="file" id="import-file-input" accept=".csv, .txt, .xlsx, .xls" style="display:none;">
-          <div style="display:flex; justify-content:center; gap:10px;">
-            <button type="button" class="btn btn-admin" id="browse-file-btn">เลือกไฟล์จากคอมพิวเตอร์</button>
-            <button type="button" class="btn btn-outline" id="modal-download-template-btn">ดาวน์โหลดไฟล์แม่แบบ
-              CSV</button>
-          </div>
-        </div>
-
-        <!-- Format Helper Hint Box -->
-        <div
-          style="background:var(--bg-main); border:1px solid var(--border-color); padding:0.85rem 1rem; border-radius:var(--radius-md); font-size:0.825rem; color:var(--text-muted); margin-bottom:1.25rem;">
-          <strong>โครงสร้างหัวคอลัมน์ในไฟล์ที่รองรับ:</strong><br>
-          <code>รหัสผู้ปฏิบัติงาน (หรือ รหัสนักศึกษา), ชื่อ-นามสกุล, สังกัด, ตำแหน่ง, อีเมล, เป้าหมายชั่วโมง</code>
-        </div>
-
-        <!-- Preview Data Table Container -->
-        <div id="import-preview-section" style="display:none;">
-          <h4 style="font-size:0.95rem; margin-bottom:0.5rem;">ตัวอย่างข้อมูลที่ตรวจพบ (<span
-              id="import-preview-count">0</span> รายการ):</h4>
-          <div class="table-responsive"
-            style="max-height:220px; overflow-y:auto; border:1px solid var(--border-color); border-radius:var(--radius-md);">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>รหัส</th>
-                  <th>ชื่อ-นามสกุล</th>
-                  <th>สังกัด</th>
-                  <th>ตำแหน่ง</th>
-                  <th>เป้าหมาย</th>
-                </tr>
-              </thead>
-              <tbody id="import-preview-tbody">
-                <!-- Preview Rows -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" data-close-modal="excel-import-modal">ยกเลิก</button>
-        <button type="button" class="btn btn-admin btn-disabled" id="confirm-import-btn" disabled>
-          ยืนยันการนำเข้ารายชื่อ</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal 8: Add New Admin / Officer Modal -->
-  <div class="modal-backdrop" id="add-admin-modal">
-    <div class="modal-content" style="max-width:500px;">
-      <div class="modal-header"
-        style="background:var(--admin-accent-light); border-bottom:1px solid rgba(124, 58, 237, 0.2);">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div>
-            <h3 class="modal-title" style="color:var(--admin-accent);">เพิ่มแอดมิน / เจ้าหน้าที่ใหม่</h3>
-            <small
-              style="color:var(--text-muted);">สร้างบัญชีเจ้าหน้าที่เพื่อสิทธิ์เข้าจัดการกิจกรรมและอนุมัติชั่วโมง</small>
-          </div>
-        </div>
-        <button class="modal-close-btn" data-close-modal="add-admin-modal">✕</button>
-      </div>
-      <form id="add-admin-form">
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label" for="new-admin-username">ชื่อผู้ใช้งาน (Username) <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="text" id="new-admin-username" class="form-control" placeholder="เช่น officer2" required
-                style="font-weight:600;">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="new-admin-password">รหัสผ่าน (Password) <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="password" id="new-admin-password" class="form-control" placeholder="อย่างน้อย 4 ตัวอักษร"
-                required>
-            </div>
-
-            <div class="form-group full-width">
-              <label class="form-label" for="new-admin-name">ชื่อ-นามสกุล เจ้าหน้าที่ <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="text" id="new-admin-name" class="form-control" placeholder="เช่น นายวิชาญ สุขสวัสดิ์"
-                required>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="new-admin-dept">สังกัด / ฝ่าย</label>
-              <input type="text" id="new-admin-dept" class="form-control" placeholder="เช่น ฝ่ายกิจกรรมนักศึกษา"
-                value="ฝ่ายกิจกรรมและพัฒนาผู้ปฏิบัติงาน">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="new-admin-role">บทบาทสิทธิ์</label>
-              <select id="new-admin-role" class="form-control">
-                <option value="Officer">Officer (เจ้าหน้าที่กิจกรรม)</option>
-                <option value="Super Admin">Super Admin (ผู้ดูแลระบบหลัก)</option>
-              </select>
-            </div>
-          </div>
-
-          <div
-            style="background:var(--admin-accent-light); border:1px dashed var(--admin-accent); padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.8rem; color:var(--text-muted); margin-top:1rem;">
-            บัญชีเจ้าหน้าที่ใหม่จะสามารถนำไปใช้กด <strong>"เข้าสู่ระบบเจ้าหน้าที่ (Officer Login)"</strong> ได้ทันที
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="add-admin-modal">ยกเลิก</button>
-          <button type="submit" class="btn btn-admin">สร้างบัญชีแอดมิน</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 9: Admin Accounts List Modal -->
-  <div class="modal-backdrop" id="admin-list-modal">
-    <div class="modal-content" style="max-width:640px;">
+  <!-- MODAL EDIT STAFF USER -->
+  <div class="modal-backdrop" id="editStaffModal">
+    <div class="modal-content">
       <div class="modal-header">
-        <div>
-          <h3 class="modal-title">รายชื่อแอดมินและเจ้าหน้าที่ทั้งหมด</h3>
-          <small style="color:var(--text-muted);">บัญชีเจ้าหน้าที่ที่มีสิทธิ์จัดการระบบ</small>
+        <h3><i class="fa-solid fa-user-pen" style="color: #2563eb;"></i> แก้ไขข้อมูลผู้ปฏิบัติงาน</h3>
+        <button class="close-btn" id="closeEditStaffModalBtn">&times;</button>
+      </div>
+      <form id="editStaffForm">
+        <input type="hidden" id="editStaffIdKey">
+        <div class="form-group">
+          <label class="form-label">รหัสนักศึกษา / รหัสผู้ปฏิบัติงาน</label>
+          <input type="text" class="form-control" id="editStaffId" readonly style="background:#f1f5f9;">
         </div>
-        <button class="modal-close-btn" data-close-modal="admin-list-modal">✕</button>
-      </div>
-      <div class="modal-body" style="padding:1rem;">
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width:40px; text-align:center;">#</th>
-                <th>Username / ชื่อเจ้าหน้าที่</th>
-                <th>สังกัด</th>
-                <th style="text-align:center;">บทบาท</th>
-                <th style="text-align:center;">วันที่สร้าง</th>
-                <th style="text-align:center; width:130px;">การจัดการ</th>
-              </tr>
-            </thead>
-            <tbody id="admin-list-tbody">
-              <!-- Dynamic Admin Rows -->
-            </tbody>
-          </table>
+        <div class="form-group">
+          <label class="form-label">ชื่อ - นามสกุล <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="editStaffName" required>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" data-close-modal="admin-list-modal">ปิด</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal 10: Edit Admin / Officer Modal -->
-  <div class="modal-backdrop" id="edit-admin-modal">
-    <div class="modal-content" style="max-width:500px;">
-      <div class="modal-header"
-        style="background:var(--admin-accent-light); border-bottom:1px solid rgba(124, 58, 237, 0.2);">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div>
-            <h3 class="modal-title" style="color:var(--admin-accent);">แก้ไขข้อมูลแอดมิน / เจ้าหน้าที่</h3>
-            <small style="color:var(--text-muted);">ปรับเปลี่ยนชื่อ รหัสผ่าน หรือบทบาทเจ้าหน้าที่</small>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">สาขาวิชา <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="editStaffMajor" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ชั้นปี <span style="color:red">*</span></label>
+            <select class="form-select" id="editStaffYear" required>
+              <option value="ชั้นปีที่ 1">ชั้นปีที่ 1</option>
+              <option value="ชั้นปีที่ 2">ชั้นปีที่ 2</option>
+              <option value="ชั้นปีที่ 3">ชั้นปีที่ 3</option>
+              <option value="ชั้นปีที่ 4">ชั้นปีที่ 4</option>
+            </select>
           </div>
         </div>
-        <button class="modal-close-btn" data-close-modal="edit-admin-modal">✕</button>
-      </div>
-      <form id="edit-admin-form">
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label" for="edit-admin-username">ชื่อผู้ใช้งาน (Username)</label>
-              <input type="text" id="edit-admin-username" class="form-control" readonly
-                style="background:var(--bg-main); font-weight:600; opacity:0.8;">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="edit-admin-password">รหัสผ่านใหม่ ( Password )</label>
-              <input type="password" id="edit-admin-password" class="form-control"
-                placeholder="เว้นว่างไว้หากไม่เปลี่ยน">
-            </div>
-
-            <div class="form-group full-width">
-              <label class="form-label" for="edit-admin-name">ชื่อ-นามสกุล เจ้าหน้าที่ <span
-                  style="color:var(--danger);">*</span></label>
-              <input type="text" id="edit-admin-name" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="edit-admin-dept">สังกัด / ฝ่าย</label>
-              <input type="text" id="edit-admin-dept" class="form-control">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="edit-admin-role">บทบาทสิทธิ์</label>
-              <select id="edit-admin-role" class="form-control">
-                <option value="Officer">Officer (เจ้าหน้าที่กิจกรรม)</option>
-                <option value="Super Admin">Super Admin (ผู้ดูแลระบบหลัก)</option>
-              </select>
-            </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">สังกัด <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="editStaffDept" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ตำแหน่ง <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="editStaffPos" required>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="edit-admin-modal">ยกเลิก</button>
-          <button type="submit" class="btn btn-admin">บันทึกการแก้ไข</button>
+        <div class="form-group">
+          <label class="form-label">เป้าหมายชั่วโมงกิจกรรมสะสม (TargetHours)</label>
+          <input type="number" class="form-control" id="editStaffTargetHours" min="1" required placeholder="200">
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL ลิงก์รูปโปรไฟล์ (รองรับ Google Drive)</label>
+          <input type="url" class="form-control" id="editStaffAvatar">
+        </div>
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register" style="background: #2563eb;">
+            <i class="fa-solid fa-save"></i> บันทึกการแก้ไข
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal 11: Google Sheets Integration Modal -->
-  <div class="modal-backdrop" id="google-sheet-settings-modal">
-    <div class="modal-content" style="max-width:680px;">
-      <div class="modal-header" style="background:#ecfdf5; border-bottom:1px solid #a7f3d0;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div>
-            <h3 class="modal-title" style="color:#047857;">เชื่อมต่อและซิงค์ข้อมูลกับ Google Sheets</h3>
-            <small style="color:var(--text-muted);">จัดเก็บข้อมูลผู้ปฏิบัติงาน กิจกรรม และการสะสมชั่วโมงไว้บน Google
-              Sheets แบบเรียลไทม์</small>
+  <!-- MODAL EDIT ADMIN USER -->
+  <div class="modal-backdrop" id="editAdminModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-pen" style="color: #7c3aed;"></i> แก้ไขข้อมูลแอดมิน / เจ้าหน้าที่</h3>
+        <button class="close-btn" id="closeEditAdminModalBtn">&times;</button>
+      </div>
+      <form id="editAdminForm">
+        <input type="hidden" id="editAdminUsernameKey">
+        <div class="form-group">
+          <label class="form-label">ชื่อผู้ใช้งาน (Username)</label>
+          <input type="text" class="form-control" id="editAdminUsername" readonly
+            style="background:#f1f5f9; font-weight:600;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ชื่อ - นามสกุล <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="editAdminFullName" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ตำแหน่ง <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="editAdminPosition" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">รหัสผ่านใหม่ (Password)</label>
+          <input type="password" class="form-control" id="editAdminPassword"
+            placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="fa-brands fa-google-drive" style="color:#0f9d58;"></i> URL ลิงก์รูปโปรไฟล์
+            (รองรับ Google Drive)</label>
+          <input type="url" class="form-control" id="editAdminAvatar"
+            placeholder="https://drive.google.com/file/d/... หรือ URL รูปภาพทั่วไป">
+        </div>
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register" style="background: #7c3aed;">
+            <i class="fa-solid fa-save"></i> บันทึกการแก้ไขข้อมูลแอดมิน
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="addAdminModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-shield" style="color: #7c3aed;"></i> เพิ่มแอดมิน / เจ้าหน้าที่ใหม่</h3>
+        <button class="close-btn" id="closeAddAdminModalBtn">&times;</button>
+      </div>
+      <form id="addAdminForm">
+        <div class="form-group">
+          <label class="form-label">ชื่อผู้ใช้งาน (Username) <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="newAdminUsername" placeholder="staff_user" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">รหัสผ่าน (Password) <span style="color:red">*</span></label>
+          <input type="password" class="form-control" id="newAdminPassword" placeholder="••••••••" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ชื่อ - นามสกุล <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="newAdminFullName" placeholder="นาย/นางสาว..." required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ตำแหน่ง <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="newAdminPosition" placeholder="เจ้าหน้าที่บริหารงานทั่วไป"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"><i class="fa-brands fa-google-drive" style="color:#0f9d58;"></i> URL
+            ลิงก์รูปโปรไฟล์แอดมิน/เจ้าหน้าที่ (รองรับ Google Drive)</label>
+          <input type="url" class="form-control" id="newAdminAvatar"
+            placeholder="https://drive.google.com/file/d/... หรือ URL รูปภาพทั่วไป">
+          <small style="color: var(--text-gray); margin-top: 0.35rem; display: block;">
+            💡 สามารถวางลิงก์แชร์จาก Google Drive ได้โดยตรง ระบบจะแปลงเป็นลิงก์แสดงรูปโปรไฟล์ให้อัตโนมัติ
+          </small>
+          <div id="adminAvatarPreviewBox" style="display: none; margin-top: 0.5rem; text-align: center;">
+            <img id="adminAvatarImgPreview" src="" alt="Admin Avatar Preview"
+              style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #7c3aed;">
           </div>
         </div>
-        <button class="modal-close-btn" data-close-modal="google-sheet-settings-modal">✕</button>
+
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register" style="background: #7c3aed;">
+            <i class="fa-solid fa-plus"></i> บันทึกเพิ่มเจ้าหน้าที่
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 5: ADMIN USERS LIST (WITH DELETE ACTION) -->
+  <div class="modal-backdrop" id="adminListModal">
+    <div class="modal-content" style="max-width: 780px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-address-book" style="color: #ea580c;"></i> รายชื่อแอดมินทั้งหมดในระบบ</h3>
+        <button class="close-btn" id="closeAdminListModalBtn">&times;</button>
       </div>
-      <div class="modal-body">
-        <!-- URL Input Form -->
-        <div style="margin-bottom:1.25rem;">
-          <label class="form-label" for="sheets-url-input">Google Apps Script Web App URL <span
-              style="color:var(--danger);">*</span></label>
-          <div style="display:flex; gap:8px;">
-            <input type="url" id="sheets-url-input" class="form-control"
-              placeholder="https://script.google.com/macros/s/.../exec">
-            <button type="button" class="btn btn-success" id="save-sheets-url-btn" style="white-space:nowrap;">บันทึก
-              URL</button>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 60px;">รูปโปรไฟล์</th>
+              <th>Username</th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>ตำแหน่ง</th>
+              <th>สิทธิ์</th>
+              <th>ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="adminListTableBody">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 9: STAFF USERS LIST (WITH EDIT & DELETE ACTIONS) -->
+  <div class="modal-backdrop" id="staffListModal">
+    <div class="modal-content" style="max-width: 900px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-users" style="color: #7c3aed;"></i> รายชื่อผู้ปฏิบัติงานทั้งหมดในระบบ</h3>
+        <button class="close-btn" id="closeStaffListModalBtn">&times;</button>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">รูป</th>
+              <th>รหัสนักศึกษา</th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>สาขาวิชา / ชั้นปี</th>
+              <th>สังกัด / ตำแหน่ง</th>
+              <th>ชั่วโมงสะสม</th>
+              <th>ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="staffListTableBody">
+            <!-- Dynamic Staff Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 10: ACTIVITIES LIST (WITH EDIT & DELETE ACTIONS) -->
+  <div class="modal-backdrop" id="activitiesListModal">
+    <div class="modal-content" style="max-width: 920px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-list-check" style="color: #1e3a8a;"></i> จัดการกิจกรรมทั้งหมดในระบบ</h3>
+        <button class="close-btn" id="closeActivitiesListModalBtn">&times;</button>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>รหัส</th>
+              <th>ชื่อกิจกรรม / หมวดหมู่</th>
+              <th>วันที่ & เวลา</th>
+              <th>สถานที่</th>
+              <th>โควตา</th>
+              <th>ชั่วโมง</th>
+              <th>ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="activitiesListTableBody">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT ACTIVITY -->
+  <div class="modal-backdrop" id="editActivityModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square" style="color: #2563eb;"></i> แก้ไขข้อมูลกิจกรรม</h3>
+        <button class="close-btn" id="closeEditActModalBtn">&times;</button>
+      </div>
+      <form id="editActivityForm">
+        <input type="hidden" id="editActId">
+        <div class="form-group">
+          <label class="form-label">ชื่อกิจกรรม <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="editActTitle" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">รายละเอียด</label>
+          <textarea class="form-control" id="editActDesc" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">วันที่ <span style="color:red">*</span></label>
+            <input type="date" class="form-control" id="editActDate" required>
           </div>
-          <small style="color:var(--text-muted); display:block; margin-top:4px;">
-            ระบุ URL ที่ได้จากการนำปรับใช้ (Deploy) สคริปต์ Google Apps Script บน Google Sheets ของคุณ
+          <div class="form-group">
+            <label class="form-label">เวลา <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="editActTime" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">สถานที่ <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="editActLocation" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">โควตารับ (คน) <span style="color:red">*</span></label>
+            <input type="number" class="form-control" id="editActQuota" min="1" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">จำนวนชั่วโมงสะสม (ชม.)</label>
+            <input type="number" class="form-control" id="editActHours" min="1" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">สถานะการรับสมัคร <span style="color:red">*</span></label>
+            <select class="form-select" id="editActStatus" required style="font-weight:600;">
+              <option value="open">🟢 เปิดรับสมัคร (Open)</option>
+              <option value="closed">🔴 ปิดรับสมัคร (Closed)</option>
+              <option value="full">🟠 โควตาเต็ม (Full)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL ลิงก์รูปป้ายกิจกรรม (รองรับ Google Drive)</label>
+          <input type="url" class="form-control" id="editActBanner">
+        </div>
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register" style="background: #2563eb;">
+            <i class="fa-solid fa-save"></i> บันทึกการแก้ไข
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 11: REGISTRATIONS LIST MODAL -->
+  <div class="modal-backdrop" id="registrationsListModal">
+    <div class="modal-content" style="max-width: 900px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-lines" style="color: #2563eb;"></i> รายการยอดการลงทะเบียนทั้งหมดในระบบ</h3>
+        <button class="close-btn" id="closeRegsListModalBtn">&times;</button>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>รหัสลงทะเบียน</th>
+              <th>ผู้ปฏิบัติงาน</th>
+              <th>กิจกรรม</th>
+              <th>ชั่วโมง</th>
+              <th>สถานะ</th>
+              <th>ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="regsListTableBody">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 12: APPROVED HOURS LIST MODAL -->
+  <div class="modal-backdrop" id="approvedHoursModal">
+    <div class="modal-content" style="max-width: 880px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-circle-check" style="color: #10b981;"></i>
+          ประวัติชั่วโมงกิจกรรมที่ได้รับการอนุมัติแล้ว</h3>
+        <button class="close-btn" id="closeApprovedHoursModalBtn">&times;</button>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>รหัสลงทะเบียน</th>
+              <th>ผู้ปฏิบัติงาน</th>
+              <th>กิจกรรมที่ได้รับอนุมัติ</th>
+              <th>ชั่วโมงที่ได้รับ</th>
+              <th>วันเวลาที่เช็คอินอนุมัติ</th>
+              <th>ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="approvedHoursTableBody">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: REGISTRATION POPUP -->
+  <div class="modal-backdrop" id="registrationModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-pen" style="color: var(--primary-blue);"></i> ลงทะเบียนเข้าร่วมกิจกรรม</h3>
+        <button class="close-btn" id="closeRegModalBtn">&times;</button>
+      </div>
+      <form id="regForm">
+        <div class="form-group">
+          <label class="form-label">กิจกรรมที่เลือก</label>
+          <input type="text" class="form-control" id="modalActTitle" readonly
+            style="background: #f1f5f9; font-weight: 600;">
+          <input type="hidden" id="modalActId">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="staffIdInput">รหัสผู้ปฏิบัติงาน <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="staffIdInput" readonly required style="background:#f1f5f9;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="staffNameInput">ชื่อ-นามสกุล <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="staffNameInput" readonly required style="background:#f1f5f9;">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="deptInput">สาขา/สังกัด <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="deptInput" readonly required style="background:#f1f5f9;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="phoneInput">เบอร์โทรศัพท์ <span style="color:red">*</span></label>
+            <input type="tel" class="form-control" id="phoneInput" placeholder="081-234-5678" required>
+            <small style="color: var(--text-gray); margin-top: 0.3rem; display: block;">
+              💡 เบอร์โทรศัพท์นี้จะถูกบันทึกเข้าโปรไฟล์ และดึงมาแสดงให้อัตโนมัติในการลงทะเบียนครั้งถัดไป
+            </small>
+          </div>
+        </div>
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register">
+            <i class="fa-solid fa-check"></i> ยืนยันการลงทะเบียน
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL ACTIVITY DETAIL & POSTER IMAGE PREVIEW -->
+  <div class="modal-backdrop" id="activityDetailModal">
+    <div class="modal-content" style="max-width: 640px; padding: 0; overflow: hidden;">
+      <div style="position: relative; width: 100%; height: 260px; background: #0f172a; overflow: hidden;">
+        <img id="detailActBanner" src="" alt="Activity Banner" style="width: 100%; height: 100%; object-fit: cover;">
+        <div
+          style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,23,42,0.85) 0%, transparent 60%);">
+        </div>
+        <button class="close-btn" id="closeDetailActModalBtn"
+          style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        <div style="position: absolute; bottom: 1rem; left: 1.25rem; right: 1.25rem; color: white;">
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.35rem;">
+            <span class="card-badge badge-open" id="detailActStatusBadge">เปิดรับลงทะเบียน</span>
+            <span class="hours-credit-badge" id="detailActHoursBadge"><i class="fa-solid fa-clock"></i> +3
+              ชม.สะสม</span>
+          </div>
+          <h2 id="detailActTitle"
+            style="font-size: 1.35rem; font-weight: 700; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+            ชื่อกิจกรรม</h2>
+        </div>
+      </div>
+
+      <div style="padding: 1.5rem;">
+        <div
+          style="display: flex; flex-direction: column; gap: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem; font-size: 0.9rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;"><i class="fa-regular fa-calendar-check"
+              style="color: #2563eb; width: 20px;"></i> <span><strong>วันที่จัดกิจกรรม:</strong> <span
+                id="detailActDate">-</span></span></div>
+          <div style="display: flex; align-items: center; gap: 0.6rem;"><i class="fa-regular fa-clock"
+              style="color: #059669; width: 20px;"></i> <span><strong>เวลา:</strong> <span
+                id="detailActTime">-</span></span></div>
+          <div style="display: flex; align-items: center; gap: 0.6rem;"><i class="fa-solid fa-location-dot"
+              style="color: #dc2626; width: 20px;"></i> <span><strong>สถานที่จัดกิจกรรม:</strong> <span
+                id="detailActLocation">-</span></span></div>
+          <div style="display: flex; align-items: center; gap: 0.6rem;"><i class="fa-solid fa-users"
+              style="color: #7c3aed; width: 20px;"></i> <span><strong>ยอดลงทะเบียนปัจจุบัน:</strong> <strong
+                id="detailActQuotaText">0 / 50 คน</strong></span></div>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.4rem;"><i
+              class="fa-solid fa-align-left" style="color: var(--primary-blue);"></i> รายละเอียดกิจกรรม</h4>
+          <p id="detailActDesc"
+            style="font-size: 0.88rem; color: var(--text-gray); line-height: 1.6; white-space: pre-line; margin: 0;">
+            รายละเอียดสังเขป...</p>
+        </div>
+
+        <div id="detailActFooterBox" style="text-align: right; border-top: 1px solid #f1f5f9; padding-top: 1rem;">
+          <!-- Dynamic Action Button Rendered via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="addActivityModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-plus-circle" style="color: var(--primary-blue);"></i> เพิ่มกิจกรรมใหม่</h3>
+        <button class="close-btn" id="closeAddActModalBtn">&times;</button>
+      </div>
+      <form id="addActivityForm">
+        <div class="form-group">
+          <label class="form-label">ชื่อกิจกรรม <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="newActTitle" required placeholder="ชื่อกิจกรรม...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">รายละเอียด</label>
+          <textarea class="form-control" id="newActDesc" rows="2" placeholder="รายละเอียดสังเขป..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">วันที่ <span style="color:red">*</span></label>
+            <input type="date" class="form-control" id="newActDate" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">เวลา <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="newActTime" required placeholder="09:00 - 16:00 น.">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">สถานที่ <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="newActLocation" required placeholder="สถานที่จัดกิจกรรม">
+          </div>
+          <div class="form-group">
+            <label class="form-label">โควตารับ (คน) <span style="color:red">*</span></label>
+            <input type="number" class="form-control" id="newActQuota" value="50" min="1" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">จำนวนชั่วโมงสะสม (ชม.)</label>
+          <input type="number" class="form-control" id="newActHours" value="3" min="1" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"><i class="fa-brands fa-google-drive" style="color:#0f9d58;"></i> URL
+            ลิงก์รูปภาพป้ายกิจกรรม (รองรับ Google Drive)</label>
+          <input type="url" class="form-control" id="newActBanner"
+            placeholder="https://drive.google.com/file/d/... หรือ URL รูปภาพทั่วไป">
+          <small style="color: var(--text-gray); margin-top: 0.35rem; display: block;">
+            💡 สามารถวางลิงก์แชร์จาก Google Drive ได้โดยตรง ระบบจะแปลงเป็นลิงก์ป้ายภาพกิจกรรมให้อัตโนมัติ
+          </small>
+          <div id="actBannerPreviewBox" style="display: none; margin-top: 0.5rem;">
+            <img id="actBannerImgPreview" src="" alt="Banner Preview"
+              style="width: 100%; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-light);">
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register" style="background: #2563eb;">
+            <i class="fa-solid fa-plus"></i> บันทึกเพิ่มกิจกรรม
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD STAFF USER TO ACTIVITY (ADMIN MANUAL REGISTRATION) -->
+  <div class="modal-backdrop" id="addStaffToActModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-plus" style="color: #10b981;"></i> เพิ่มผู้ปฏิบัติงานเข้ากิจกรรม</h3>
+        <button class="close-btn" id="closeAddStaffToActModalBtn">&times;</button>
+      </div>
+
+      <form id="addStaffToActForm">
+        <input type="hidden" id="adminAddActId">
+        <input type="hidden" id="adminAddActTitle">
+        <input type="hidden" id="adminAddActHours">
+
+        <div
+          style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem; font-size: 0.88rem; color: #166534;">
+          <strong>กิจกรรม:</strong> <span id="adminAddActNameLabel" style="font-weight: 700;">-</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">เลือกผู้ปฏิบัติงานจากฐานข้อมูล <span style="color:red">*</span></label>
+          <select class="form-select" id="selectStaffUserForAct" required>
+            <option value="">-- เลือกผู้ปฏิบัติงาน --</option>
+          </select>
+          <small style="color: var(--text-gray); margin-top: 0.35rem; display: block;">
+            💡 เลือกรายชื่อผู้ปฏิบัติงานในระบบเพื่อเพิ่มเข้ากิจกรรมนี้
           </small>
         </div>
 
-        <!-- Sync & Local Backup Action Controls -->
-        <div
-          style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:1.5rem; padding:1rem; background:var(--bg-main); border-radius:var(--radius-md); border:1px solid var(--border-color); align-items:center;">
-          <button type="button" class="btn btn-primary" id="manual-sync-sheets-btn">ซิงค์ส่งข้อมูลไปยัง Google Sheets
-            ทันที</button>
-          <button type="button" class="btn btn-outline" id="manual-fetch-sheets-btn">ดึงข้อมูลล่าสุดจาก Google
-            Sheets</button>
-          <div style="width:100%; height:1px; background:var(--border-color); margin:4px 0;"></div>
-          <button type="button" class="btn btn-ghost btn-sm" id="export-backup-json-btn"
-            style="border:1px solid var(--border-color);">📥 ดาวน์โหลดไฟล์สำรองข้อมูล (.json)</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="import-backup-json-btn"
-            style="border:1px solid var(--border-color);">📤 นำเข้าฟื้นฟูไฟล์สำรองข้อมูล (.json)</button>
-          <input type="file" id="import-backup-json-file" accept=".json" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">สถานะการอนุมัติชั่วโมง</label>
+          <select class="form-select" id="adminAddActStatus">
+            <option value="pending" selected>รอนุมัติชั่วโมง (Pending)</option>
+            <option value="approved">อนุมัติชั่วโมงทันที (Approved)</option>
+          </select>
         </div>
 
-        <!-- How to Setup Guide & Script Code -->
-        <div
-          style="border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1rem; background:var(--bg-surface);">
-          <h4
-            style="font-size:0.95rem; color:var(--primary); margin-bottom:0.5rem; display:flex; align-items:center; gap:6px;">
-            วิธีติดตั้งสคริปต์บน Google Sheets (ครั้งแรก):
-          </h4>
-          <ol
-            style="font-size:0.825rem; color:var(--text-muted); padding-left:1.2rem; margin-bottom:0.75rem; line-height:1.5;">
-            <li>เปิด Google Sheets ใหม่ -> เลือกเมนู <strong>ส่วนขยาย (Extensions)</strong> -> <strong>Apps
-                Script</strong></li>
-            <li>ลบโค้ดเดิมใน <code>Code.gs</code> ออกทั้งหมด นำโค้ดด้านล่างไปวางแทนที่ แล้วกดบันทึก (Ctrl+S)</li>
-            <li>กดปุ่ม <strong>การทำให้ใช้งานได้ (Deploy)</strong> -> <strong>การทำให้ใช้งานได้ใหม่ (New
-                deployment)</strong></li>
-            <li>เลือกประเภท: <code>Web app</code> | ผู้มีสิทธิ์เข้าถึง: <code>ทุกคน (Anyone)</code> -> กด
-              <strong>ทำให้ใช้งานได้ (Deploy)</strong>
-            </li>
-            <li>คัดลอก **Web app URL** นำมาวางในช่องด้านบน แล้วกดบันทึก URL</li>
-          </ol>
-
-          <div style="position:relative;">
-            <button type="button" id="copy-gas-code-btn" class="btn btn-ghost btn-sm"
-              style="position:absolute; right:8px; top:8px; background:rgba(255,255,255,0.9); border:1px solid var(--border-color); font-size:0.75rem;">
-              คัดลอกโค้ดสคริปต์</button>
-            <pre
-              style="max-height:220px; overflow-y:auto; background:#1e293b; color:#f8fafc; padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.75rem; line-height:1.4;"
-              id="gas-code-block"><code>function doGet(e) {
-  return handleRequest(e, "GET");
-}
-
-function doPost(e) {
-  return handleRequest(e, "POST");
-}
-
-function handleRequest(e, method) {
-  var lock = LockService.getScriptLock();
-  try { lock.waitLock(5000); } catch (err) {}
-
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var action = "";
-    var payloadData = null;
-
-    if (e && e.parameter && e.parameter.action) {
-      action = e.parameter.action;
-    }
-
-    if (e && e.postData && e.postData.contents) {
-      try {
-        payloadData = JSON.parse(e.postData.contents);
-        if (payloadData && payloadData.action) action = payloadData.action;
-      } catch (pErr) {}
-    } else if (e && e.parameter && e.parameter.data) {
-      try {
-        payloadData = JSON.parse(e.parameter.data);
-        if (payloadData && payloadData.action) action = payloadData.action;
-      } catch (pErr) {}
-    }
-
-    // 1. ACTION: SYNC ALL (ผสานและบันทึกข้อมูลแบบป้องกันข้อมูลหาย 100%)
-    if (action === "syncAll" && payloadData) {
-      if (Array.isArray(payloadData.workers) && payloadData.workers.length > 0) {
-        upsertToSheet(ss, "Workers", payloadData.workers, "id");
-      }
-      if (Array.isArray(payloadData.activities) && payloadData.activities.length > 0) {
-        upsertToSheet(ss, "Activities", payloadData.activities, "id");
-      }
-      if (Array.isArray(payloadData.registrations)) {
-        upsertRegistrations(ss, payloadData.registrations);
-      }
-      if (Array.isArray(payloadData.categories) && payloadData.categories.length > 0) {
-        upsertCategories(ss, payloadData.categories);
-      }
-      if (Array.isArray(payloadData.admins) && payloadData.admins.length > 0) {
-        upsertToSheet(ss, "Admins", payloadData.admins, "username");
-      }
-
-      var currentActivities = readFromSheet(ss, "Activities");
-      var currentRegistrations = readFromSheet(ss, "Registrations");
-      if (currentActivities.length > 0) {
-        syncIndividualActivitySheets(ss, currentActivities, currentRegistrations);
-      }
-
-      SpreadsheetApp.flush(); // บันทึกข้อมูลลงชีททันทีไม่ต้องรอ
-      saveBackupToGoogleDrive(payloadData); // สำรองข้อมูล JSON ลง Google Drive อัตโนมัติ
-      return jsonResponse({ status: "success", message: "ผสานและบันทึกข้อมูลเรียบร้อยแล้ว" });
-    }
-
-    // 2. ACTION: GET ALL (อ่านข้อมูลทั้งหมด)
-    var registrations = readAllRegistrationsCombined(ss);
-
-    var result = {
-      status: "success",
-      workers: readFromSheet(ss, "Workers"),
-      activities: readFromSheet(ss, "Activities"),
-      registrations: registrations,
-      categories: readFromSheet(ss, "Categories"),
-      admins: readFromSheet(ss, "Admins")
-    };
-
-    return jsonResponse(result);
-  } catch (err) {
-    return jsonResponse({ status: "error", message: err.toString() });
-  } finally {
-    try { lock.releaseLock(); } catch (lErr) {}
-  }
-}
-
-function jsonResponse(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function syncIndividualActivitySheets(ss, activities, registrations) {
-  if (!activities || !Array.isArray(activities)) return;
-  var regs = Array.isArray(registrations) ? registrations : [];
-
-  var regByAct = {};
-  regs.forEach(function(r) {
-    if (!r || !r.activityId) return;
-    var actId = String(r.activityId).trim();
-    if (!regByAct[actId]) regByAct[actId] = [];
-    regByAct[actId].push(r);
-  });
-
-  activities.forEach(function(act) {
-    if (!act || !act.id) return;
-    var actId = String(act.id).trim();
-    var safeTitle = (act.title || actId).replace(/[:\/\\?\*\[\]]/g, "_").substring(0, 15);
-    var sheetName = "Act_" + actId + "_" + safeTitle;
-
-    var actRegs = regByAct[actId] || [];
-    writeToSheet(ss, sheetName, actRegs);
-  });
-}
-
-function readRegistrationsFromActivitySheets(ss) {
-  var sheets = ss.getSheets();
-  var allRegs = [];
-  var seenKeys = {};
-
-  sheets.forEach(function(sheet) {
-    var sName = sheet.getName();
-    if (sName.indexOf("Act_") === 0) {
-      var regs = readFromSheet(ss, sName);
-      if (Array.isArray(regs)) {
-        regs.forEach(function(r) {
-          if (r && r.workerId && r.activityId) {
-            var key = String(r.workerId).trim() + "_" + String(r.activityId).trim();
-            if (!seenKeys[key]) {
-              seenKeys[key] = true;
-              allRegs.push(r);
-            }
-          }
-        });
-      }
-    }
-  });
-
-  return allRegs;
-}
-
-function readAllRegistrationsCombined(ss) {
-  var mainRegs = readFromSheet(ss, "Registrations");
-  var actRegs = readRegistrationsFromActivitySheets(ss);
-  var combinedMap = {};
-  
-  if (Array.isArray(mainRegs)) {
-    mainRegs.forEach(function(r) {
-      if (r && r.workerId && r.activityId) {
-        var key = String(r.workerId).trim() + "_" + String(r.activityId).trim();
-        combinedMap[key] = r;
-      }
-    });
-  }
-  
-  if (Array.isArray(actRegs)) {
-    actRegs.forEach(function(r) {
-      if (r && r.workerId && r.activityId) {
-        var key = String(r.workerId).trim() + "_" + String(r.activityId).trim();
-        combinedMap[key] = r;
-      }
-    });
-  }
-
-  var result = [];
-  Object.keys(combinedMap).forEach(function(k) {
-    result.push(combinedMap[k]);
-  });
-  return result;
-}
-
-function upsertToSheet(ss, sheetName, incomingItems, keyField) {
-  if (!incomingItems || !Array.isArray(incomingItems) || incomingItems.length === 0) return;
-  var existing = readFromSheet(ss, sheetName);
-  var mergedMap = {};
-
-  existing.forEach(function(item) {
-    if (item && item[keyField] !== undefined && item[keyField] !== null) {
-      var k = String(item[keyField]).trim().toLowerCase();
-      if (k) mergedMap[k] = item;
-    }
-  });
-
-  incomingItems.forEach(function(item) {
-    if (item && item[keyField] !== undefined && item[keyField] !== null) {
-      var k = String(item[keyField]).trim().toLowerCase();
-      if (k) {
-        if (mergedMap[k]) {
-          mergedMap[k] = Object.assign({}, mergedMap[k], item);
-        } else {
-          mergedMap[k] = item;
-        }
-      }
-    }
-  });
-
-  var finalItems = [];
-  Object.keys(mergedMap).forEach(function(k) { finalItems.push(mergedMap[k]); });
-  writeToSheet(ss, sheetName, finalItems);
-}
-
-function upsertRegistrations(ss, incomingRegs) {
-  if (!Array.isArray(incomingRegs)) return;
-  var existing = readFromSheet(ss, "Registrations");
-  var mergedMap = {};
-
-  existing.forEach(function(r) {
-    if (r && r.workerId && r.activityId && r.status !== 'cancelled') {
-      var k = String(r.workerId).trim().toLowerCase() + "_" + String(r.activityId).trim().toLowerCase();
-      mergedMap[k] = r;
-    }
-  });
-
-  incomingRegs.forEach(function(r) {
-    if (r && r.workerId && r.activityId) {
-      var k = String(r.workerId).trim().toLowerCase() + "_" + String(r.activityId).trim().toLowerCase();
-      if (r.status === 'cancelled') {
-        delete mergedMap[k];
-      } else if (mergedMap[k]) {
-        mergedMap[k] = Object.assign({}, mergedMap[k], r);
-      } else {
-        mergedMap[k] = r;
-      }
-    }
-  });
-
-  var finalItems = [];
-  Object.keys(mergedMap).forEach(function(k) { finalItems.push(mergedMap[k]); });
-  writeToSheet(ss, "Registrations", finalItems);
-}
-
-function upsertCategories(ss, incomingCats) {
-  if (!Array.isArray(incomingCats)) return;
-  var existing = readFromSheet(ss, "Categories");
-  var catSet = {};
-
-  existing.forEach(function(c) {
-    var str = String(c || "").trim();
-    if (str) catSet[str] = true;
-  });
-
-  incomingCats.forEach(function(c) {
-    var str = String(c || "").trim();
-    if (str) catSet[str] = true;
-  });
-
-  var finalCats = Object.keys(catSet);
-  writeToSheet(ss, "Categories", finalCats);
-}
-
-function writeToSheet(ss, sheetName, items) {
-  if (!items || !Array.isArray(items) || items.length === 0) return;
-  var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
-  sheet.clearContents();
-  
-  if (typeof items[0] !== "object" || items[0] === null) {
-    var catRows = [["Category"]].concat(items.map(function(item) { return [String(item)]; }));
-    sheet.getRange(1, 1, catRows.length, 1).setValues(catRows);
-    return;
-  }
-
-  var headerMap = {};
-  items.forEach(function(item) {
-    if (item && typeof item === "object") {
-      Object.keys(item).forEach(function(k) { headerMap[k] = true; });
-    }
-  });
-  var headers = Object.keys(headerMap);
-  if (headers.length === 0) return;
-
-  var allRows = [headers];
-  items.forEach(function(item) {
-    var row = headers.map(function(h) {
-      var val = item[h];
-      if (val === undefined || val === null) return "";
-      if (typeof val === "object") return JSON.stringify(val);
-      return String(val);
-    });
-    allRows.push(row);
-  });
-
-  sheet.getRange(1, 1, allRows.length, headers.length).setValues(allRows);
-}
-
-function readFromSheet(ss, sheetName) {
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return [];
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
-  if (lastRow < 2 || lastCol < 1) return [];
-  var data = sheet.getRange(1, 1, lastRow, lastCol).getDisplayValues();
-  var headers = data[0];
-
-  if (headers.length === 1 && headers[0] === "Category") {
-    var catList = [];
-    for (var i = 1; i < data.length; i++) {
-      var cellVal = String(data[i][0] || "").trim();
-      if (cellVal) catList.push(cellVal);
-    }
-    return catList;
-  }
-
-  var result = [];
-  for (var i = 1; i < data.length; i++) {
-    var obj = {};
-    var hasContent = false;
-    for (var j = 0; j < headers.length; j++) {
-      var key = String(headers[j] || "").trim();
-      if (!key) continue;
-      var val = data[i][j];
-      if (val === "" || val === null || val === undefined) {
-        obj[key] = "";
-      } else if (typeof val === "string" && (val.startsWith("{") || val.startsWith("["))) {
-        try { obj[key] = JSON.parse(val); } catch(e) { obj[key] = val; }
-      } else {
-        obj[key] = val;
-      }
-      if (val !== "") hasContent = true;
-    }
-    if (hasContent) result.push(obj);
-  }
-  return result;
-}
-
-function saveBackupToGoogleDrive(payloadData) {
-  if (!payloadData || typeof payloadData !== "object") return;
-  try {
-    var folderName = "SMO_Staff_Web_Backups";
-    var folders = DriveApp.getFoldersByName(folderName);
-    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
-
-    var formattedJson = JSON.stringify(payloadData, null, 2);
-    var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-
-    // 1. สำรองไฟล์เวอร์ชันล่าสุด (Latest Backup)
-    var latestFileName = "SMO_STAFF_BACKUP_LATEST.json";
-    var latestFiles = folder.getFilesByName(latestFileName);
-    if (latestFiles.hasNext()) {
-      latestFiles.next().setContent(formattedJson);
-    } else {
-      folder.createFile(latestFileName, formattedJson, MimeType.PLAIN_TEXT);
-    }
-
-    // 2. สำรองไฟล์ประวัติประจำวัน (Daily Backup)
-    var dailyFileName = "SMO_STAFF_BACKUP_" + dateStr + ".json";
-    var dailyFiles = folder.getFilesByName(dailyFileName);
-    if (dailyFiles.hasNext()) {
-      dailyFiles.next().setContent(formattedJson);
-    } else {
-      folder.createFile(dailyFileName, formattedJson, MimeType.PLAIN_TEXT);
-    }
-  } catch (err) {
-    Logger.log("Google Drive Backup Notice: " + err.toString());
-  }
-}</code></pre>
-          </div>
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-register" style="background: #10b981;">
+            <i class="fa-solid fa-user-plus"></i> ยืนยันการเพิ่มเข้ากิจกรรม
+          </button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" data-close-modal="google-sheet-settings-modal">ปิด</button>
-      </div>
+      </form>
     </div>
   </div>
 
-  <!-- Modal 13: Fullscreen Image Viewer Lightbox Modal -->
-  <div class="modal-backdrop" id="image-viewer-modal" style="z-index:99999;">
+  <!-- MODAL: DATA LOADING POPUP -->
+  <div class="modal-backdrop" id="dataLoadingModal"
+    style="z-index: 9999; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);">
     <div class="modal-content"
-      style="max-width:92vw; max-height:92vh; background:transparent; border:none; box-shadow:none; padding:0; text-align:center;">
-      <div style="position:relative; display:inline-block; max-width:100%; max-height:88vh;">
-        <button class="modal-close-btn" data-close-modal="image-viewer-modal"
-          style="position:absolute; top:-15px; right:-15px; background:rgba(0,0,0,0.85); color:#fff; border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; cursor:pointer; z-index:10; border:2px solid #fff;">✕</button>
-        <img id="image-viewer-img" src=""
-          style="max-width:100%; max-height:82vh; object-fit:contain; border-radius:var(--radius-lg); box-shadow:0 12px 40px rgba(0,0,0,0.7); background:#0f172a; border:2px solid rgba(255,255,255,0.2);"
-          alt="Full Resolution Preview">
-        <div id="image-viewer-caption"
-          style="color:#ffffff; margin-top:10px; font-size:0.95rem; font-weight:600; text-shadow:0 2px 4px rgba(0,0,0,0.9); background:rgba(15,23,42,0.85); padding:8px 20px; border-radius:20px; display:inline-block; border:1px solid rgba(255,255,255,0.15);">
+      style="max-width: 420px; text-align: center; padding: 2.25rem 1.5rem; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+      <div style="margin-bottom: 1.25rem;">
+        <i class="fa-solid fa-cloud-arrow-down fa-bounce" style="font-size: 3rem; color: #2563eb;"></i>
+      </div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.5rem;">
+        กำลังเชื่อมต่อและโหลดข้อมูลสด...
+      </h3>
+      <p style="font-size: 0.88rem; color: var(--text-gray); line-height: 1.5; margin-bottom: 1.25rem;">
+        ระบบกำลังดึงข้อมูลกิจกรรม สถิติชั่วโมง และรายชื่อจาก Google Sheets
+      </p>
+
+      <!-- Progress Bar -->
+      <div
+        style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; position: relative;">
+        <div id="loadingProgressBar"
+          style="width: 60%; height: 100%; background: linear-gradient(90deg, #2563eb, #3b82f6); border-radius: 99px; animation: loadingPulse 1.2s infinite ease-in-out;">
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Printable Transcript Container (Targeted by @media print) -->
-  <div id="printable-transcript"></div>
+  <!-- MODAL 8: GAS SETTINGS & GOOGLE DRIVE BACKUP SETUP -->
+  <div class="modal-backdrop" id="gasSettingsModal">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3><i class="fa-brands fa-google-drive" style="color: #0f9d58;"></i> เชื่อมต่อ Google Drive & Sheets Auto
+          Backup</h3>
+        <button class="close-btn" id="closeGasModalBtn">&times;</button>
+      </div>
 
-  <!-- JS Files -->
-  <script src="js/store.js"></script>
-  <script src="js/ui-components.js"></script>
+      <div
+        style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: #166534;">
+        <strong style="display: block; margin-bottom: 0.35rem;"><i class="fa-solid fa-circle-info"></i>
+          คำแนะนำการเชื่อมต่อ Google Drive อัตโนมัติ:</strong>
+        <ol style="margin-left: 1.25rem; line-height: 1.6;">
+          <li>คัดลอกซอร์สโค้ดจากไฟล์ <code>google-apps-script/Code.gs</code> ไปวางใน <a href="https://script.google.com"
+              target="_blank" style="color: #15803d; font-weight: 700; text-decoration: underline;">Google Apps
+              Script</a></li>
+          <li>กดปุ่ม <strong>Deploy > New deployment</strong> (เลือกประเภท <code>Web app</code>)</li>
+          <li>ตั้งค่า <strong>Execute as: Me</strong> และ <strong>Who has access: Anyone</strong></li>
+          <li>นำ Web App URL ที่ได้ (ลงท้ายด้วย <code>/exec</code>) มาวางในช่องด้านล่างนี้</li>
+        </ol>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Google Apps Script Web App URL <span style="color:red">*</span></label>
+        <input type="url" class="form-control" id="gasUrlInput"
+          placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+        <small style="color: var(--text-gray); margin-top: 0.4rem; display: block;">
+          💡 ระบบจะใช้ URL นี้สร้างไฟล์ <code>latest_system_state.json</code> และ <code>backup_state_...json</code> ลงใน
+          Google Drive ของคุณอัตโนมัติ
+        </small>
+      </div>
+
+      <div style="margin-top: 1.25rem; text-align: right;">
+        <button class="btn-register" id="saveGasUrlBtn"
+          style="width: auto; padding: 0.55rem 1.5rem; background: #0f9d58;">
+          <i class="fa-solid fa-link"></i> บันทึกการเชื่อมต่อ Google Drive
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
 
