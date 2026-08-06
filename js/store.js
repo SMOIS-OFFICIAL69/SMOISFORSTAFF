@@ -918,7 +918,8 @@ class Store {
 
   updateActivity(id, updatedData) {
     let activities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES)) || [];
-    const index = activities.findIndex(a => a.id === id);
+    const cleanId = String(id || '').trim().toUpperCase();
+    const index = activities.findIndex(a => String(a.id || '').trim().toUpperCase() === cleanId);
     if (index !== -1) {
       activities[index] = { ...activities[index], ...updatedData };
       localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
@@ -930,12 +931,13 @@ class Store {
 
   deleteActivity(id) {
     let activities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES)) || [];
-    activities = activities.filter(a => a.id !== id);
+    const cleanId = String(id || '').trim().toUpperCase();
+    activities = activities.filter(a => String(a.id || '').trim().toUpperCase() !== cleanId);
     localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
 
     // Remove registrations associated with this activity
     let regs = this.getRegistrations();
-    regs = regs.filter(r => r.activityId !== id);
+    regs = regs.filter(r => String(r.activityId || '').trim().toUpperCase() !== cleanId);
     localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(regs));
     this.autoSyncToSheets();
   }

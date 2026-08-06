@@ -1323,17 +1323,33 @@ document.addEventListener('DOMContentLoaded', () => {
   function formatDateForInput(dateInput) {
     if (!dateInput) return new Date().toISOString().split('T')[0];
 
-    const str = String(dateInput).trim();
-    if (!str) return new Date().toISOString().split('T')[0];
-
-    // 1. Direct YYYY-MM-DD format
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-      return str;
+    if (dateInput instanceof Date) {
+      if (isNaN(dateInput.getTime())) return new Date().toISOString().split('T')[0];
+      let y = dateInput.getFullYear();
+      if (y > 2400) y -= 543;
+      const m = String(dateInput.getMonth() + 1).padStart(2, '0');
+      const d = String(dateInput.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
     }
 
-    // 2. YYYY-M-D or ISO string like 2026-08-10T00:00:00.000Z or 2026-08-10 00:00:00
-    const firstPart = str.split('T')[0].split(' ')[0];
-    const ymdMatch = firstPart.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    let str = String(dateInput).trim();
+    if (!str) return new Date().toISOString().split('T')[0];
+
+    // Handle ISO strings or strings with T / Z (e.g. "2026-08-10T00:00:00.000Z")
+    if (str.includes('T') || str.includes('Z')) {
+      const isoDate = new Date(str);
+      if (!isNaN(isoDate.getTime())) {
+        let y = isoDate.getFullYear();
+        if (y > 2400) y -= 543;
+        const m = String(isoDate.getMonth() + 1).padStart(2, '0');
+        const d = String(isoDate.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+      str = str.split('T')[0].split(' ')[0];
+    }
+
+    // 1. YYYY-MM-DD or YYYY/MM/DD or YYYY-M-D
+    const ymdMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
     if (ymdMatch) {
       let y = parseInt(ymdMatch[1], 10);
       if (y > 2400) y -= 543;
@@ -1342,8 +1358,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return `${y}-${m}-${d}`;
     }
 
-    // 3. DD/MM/YYYY or DD-MM-YYYY format
-    const dmyMatch = firstPart.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    // 2. DD/MM/YYYY or DD-MM-YYYY or D-M-YYYY
+    const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
     if (dmyMatch) {
       const d = String(dmyMatch[1]).padStart(2, '0');
       const m = String(dmyMatch[2]).padStart(2, '0');
@@ -1352,7 +1368,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return `${y}-${m}-${d}`;
     }
 
-    // 4. Thai text format like "10 ส.ค. 2569" or "10 สิงหาคม 2569"
+    // 3. Thai text format like "10 ส.ค. 2569" or "10 สิงหาคม 2569"
     const thaiMonths = {
       'ม.ค.': '01', 'มกราคม': '01',
       'ก.พ.': '02', 'กุมภาพันธ์': '02',
@@ -1377,9 +1393,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 5. Standard Date object fallback using local time
+    // 4. Standard Date parse fallback
     try {
-      const parsedDate = new Date(str.replace(/-/g, '/'));
+      const parsedDate = new Date(str);
       if (!isNaN(parsedDate.getTime())) {
         let year = parsedDate.getFullYear();
         if (year > 2400) year -= 543;
