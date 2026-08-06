@@ -660,10 +660,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusVal = filterStatus.value;
 
     const filtered = activities.filter(act => {
-      const matchSearch = act.title.toLowerCase().includes(searchTerm) ||
-        act.id.toLowerCase().includes(searchTerm) ||
-        act.location.toLowerCase().includes(searchTerm) ||
-        act.description.toLowerCase().includes(searchTerm);
+      if (!act) return false;
+      const titleStr = String(act.title || '').toLowerCase();
+      const idStr = String(act.id || '').toLowerCase();
+      const locStr = String(act.location || '').toLowerCase();
+      const descStr = String(act.description || '').toLowerCase();
+
+      const matchSearch = !searchTerm || titleStr.includes(searchTerm) ||
+        idStr.includes(searchTerm) ||
+        locStr.includes(searchTerm) ||
+        descStr.includes(searchTerm);
       const matchCategory = categoryVal === 'all' || act.category === categoryVal;
       const matchStatus = statusVal === 'all' || act.status === statusVal;
 

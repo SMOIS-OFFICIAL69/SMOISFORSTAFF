@@ -37,7 +37,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 // Default Shared Google Sheets Web App URL (Fallback for all devices)
-const DEFAULT_GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwPBAtMIc046woTN5b71WNZOUHrvkXLzNpvdluwyYaVy17GF41wy1aR5l5dAl5Fo4-H/exec';
+const DEFAULT_GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbza9o5VDlBzDtSiXk16Dvng6RR3I1m2rDSzV6AD81U4IUyHU1uA7YalMgPiImg6Kyw/exec';
 
 // Initial Institutional Seed Data
 const DEFAULT_WORKERS = [
@@ -144,7 +144,8 @@ class Store {
     if (!localStorage.getItem(STORAGE_KEYS.CURRENT_ROLE)) {
       localStorage.setItem(STORAGE_KEYS.CURRENT_ROLE, 'worker');
     }
-    if (!localStorage.getItem(STORAGE_KEYS.GOOGLE_SHEET_URL)) {
+    const currentUrl = localStorage.getItem(STORAGE_KEYS.GOOGLE_SHEET_URL);
+    if (!currentUrl || currentUrl.includes('AKfycbwPBAtMIc046woTN5b71WNZOUHrvkXLzNpvdluwyYaVy17GF41wy1aR5l5dAl5Fo4-H')) {
       localStorage.setItem(STORAGE_KEYS.GOOGLE_SHEET_URL, DEFAULT_GOOGLE_SHEET_URL);
     }
     this.sanitizeAndFixDuplicateActivityIds();
@@ -168,7 +169,6 @@ class Store {
 
       ws.onclose = () => {
         this._realtimeSocket = null;
-        setTimeout(() => this.initRealtimeWebSocket(), 3000);
       };
 
       ws.onerror = () => {
@@ -318,7 +318,19 @@ class Store {
       const cacheBuster = `_t=${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       const fetchUrl = url.includes('?') ? `${url}&action=getAll&${cacheBuster}` : `${url}?action=getAll&${cacheBuster}`;
       const response = await fetch(fetchUrl, { cache: 'no-store' });
-      const data = await response.json();
+      const text = await response.text();
+      let data = null;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        if (!response.ok || text.includes('<!DOCTYPE') || text.includes('<html')) {
+          return {
+            success: false,
+            message: 'ไม่สามารถเข้าถึง Google Apps Script URL ได้ (404/Access Denied) กรุณาตรวจสอบการตั้งค่า Deploy Web App ใน Google Apps Script ให้ "Who has access" (ผู้มีสิทธิ์เข้าถึง) เป็น "Anyone" (ทุกคน)'
+          };
+        }
+        return { success: false, message: 'รูปแบบการตอบกลับจาก Google Sheets ไม่ใช่ JSON ที่ถูกต้อง' };
+      }
 
       if (data && typeof data === 'object') {
         let hasRemoteData = false;
