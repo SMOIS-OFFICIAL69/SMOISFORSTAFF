@@ -188,6 +188,9 @@
       <div class="activity-grid" id="activities-cards-grid">
         <!-- Dynamic Cards Rendered Here -->
       </div>
+
+      <!-- Locked View for Logged-Out Users -->
+      <div id="activities-locked-container" style="display:none;"></div>
     </section>
 
     <!-- VIEW 2: My Summary & History -->
@@ -1125,6 +1128,7 @@ function handleRequest(e, method) {
       }
 
       SpreadsheetApp.flush(); // บันทึกข้อมูลลงชีททันทีไม่ต้องรอ
+      saveBackupToGoogleDrive(payloadData); // สำรองข้อมูล JSON ลง Google Drive อัตโนมัติ
       return jsonResponse({ status: "success", message: "บันทึกข้อมูลเรียบร้อยแล้ว" });
     }
 
@@ -1277,6 +1281,38 @@ function readFromSheet(ss, sheetName) {
     if (hasContent) result.push(obj);
   }
   return result;
+}
+
+function saveBackupToGoogleDrive(payloadData) {
+  if (!payloadData || typeof payloadData !== "object") return;
+  try {
+    var folderName = "SMO_Staff_Web_Backups";
+    var folders = DriveApp.getFoldersByName(folderName);
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+
+    var formattedJson = JSON.stringify(payloadData, null, 2);
+    var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+
+    // 1. สำรองไฟล์เวอร์ชันล่าสุด (Latest Backup)
+    var latestFileName = "SMO_STAFF_BACKUP_LATEST.json";
+    var latestFiles = folder.getFilesByName(latestFileName);
+    if (latestFiles.hasNext()) {
+      latestFiles.next().setContent(formattedJson);
+    } else {
+      folder.createFile(latestFileName, formattedJson, MimeType.PLAIN_TEXT);
+    }
+
+    // 2. สำรองไฟล์ประวัติประจำวัน (Daily Backup)
+    var dailyFileName = "SMO_STAFF_BACKUP_" + dateStr + ".json";
+    var dailyFiles = folder.getFilesByName(dailyFileName);
+    if (dailyFiles.hasNext()) {
+      dailyFiles.next().setContent(formattedJson);
+    } else {
+      folder.createFile(dailyFileName, formattedJson, MimeType.PLAIN_TEXT);
+    }
+  } catch (err) {
+    Logger.log("Google Drive Backup Notice: " + err.toString());
+  }
 }</code></pre>
           </div>
         </div>
