@@ -197,6 +197,20 @@ class SmoStaffAPI {
   /**
    * LIVE SYNC: ดึงข้อมูลจริงทั้งหมดจาก Google Sheets ผ่าน Web App API
    */
+  sanitizeActivities(activities) {
+    if (!Array.isArray(activities)) return activities;
+    const seen = new Set();
+    return activities.map(act => {
+      if (!act) return act;
+      let id = act.id ? String(act.id).trim() : '';
+      if (!id || seen.has(id)) {
+        id = this.generateUniqueActivityId(Array.from(seen).map(i => ({ id: i })));
+      }
+      seen.add(id);
+      return { ...act, id };
+    });
+  }
+
   async syncDataFromGoogleSheets() {
     const gasUrl = this.getGasUrl();
     if (!gasUrl) return false;
@@ -207,7 +221,7 @@ class SmoStaffAPI {
       const json = await res.json();
       if (json && json.status === 'success' && json.data) {
         if (Array.isArray(json.data.activities)) {
-          localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(json.data.activities));
+          localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(this.sanitizeActivities(json.data.activities)));
         }
         if (Array.isArray(json.data.registrations)) {
           localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(json.data.registrations));
@@ -246,7 +260,7 @@ class SmoStaffAPI {
       ]);
 
       if (actJson && actJson.status === 'success' && Array.isArray(actJson.data)) {
-        localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(actJson.data));
+        localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(this.sanitizeActivities(actJson.data)));
       }
       if (regJson && regJson.status === 'success' && Array.isArray(regJson.data)) {
         localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(regJson.data));
@@ -424,7 +438,35 @@ class SmoStaffAPI {
 
   // --- ACTIVITIES CRUD ---
   getActivities() {
-    const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES) || '[]');
+    let local = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES) || '[]');
+    if (!Array.isArray(local) || local.length === 0) return local;
+
+    // Self-healing: Check for duplicate IDs in local storage
+    const seen = new Set();
+    let hasDuplicates = false;
+    for (const act of local) {
+      if (!act || !act.id || seen.has(act.id)) {
+        hasDuplicates = true;
+        break;
+      }
+      seen.add(act.id);
+    }
+
+    if (hasDuplicates) {
+      const fixedSet = new Set();
+      const cleaned = local.map(act => {
+        if (!act) return act;
+        let id = act.id;
+        if (!id || fixedSet.has(id)) {
+          id = this.generateUniqueActivityId(Array.from(fixedSet).map(i => ({ id: i })));
+        }
+        fixedSet.add(id);
+        return { ...act, id };
+      });
+      localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(cleaned));
+      return cleaned;
+    }
+
     return local;
   }
 
@@ -459,7 +501,7 @@ class SmoStaffAPI {
 
   async createActivity(activityData) {
     activityData.banner = convertDriveUrlToDirectLink(activityData.banner);
-    const activities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES) || '[]');
+    const activities = this.getActivities();
     const newId = this.generateUniqueActivityId(activities);
     const newAct = {
       id: newId,
@@ -475,14 +517,14 @@ class SmoStaffAPI {
   }
 
   async updateActivity(id, updatedData) {
-    const activities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES) || '[]');
+    const activities = this.getActivities();
     const idx = activities.findIndex(a => a.id === id);
     if (idx !== -1) {
       if (updatedData.banner) updatedData.banner = convertDriveUrlToDirectLink(updatedData.banner);
       activities[idx] = { ...activities[idx], ...updatedData };
       localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
 
-      await this.sendGasMutation('createActivity', { data: activities[idx] }, `id=${encodeURIComponent(id)}&title=${encodeURIComponent(activities[idx].title)}&location=${encodeURIComponent(activities[idx].location || '')}&date=${encodeURIComponent(activities[idx].date || '')}&time=${encodeURIComponent(activities[idx].time || '')}&maxQuota=${activities[idx].maxQuota}&hours=${activities[idx].hours}&status=${encodeURIComponent(activities[idx].status || 'open')}`);
+      await this.sendGasMutation('updateActivity', { data: activities[idx] }, `id=${encodeURIComponent(id)}&title=${encodeURIComponent(activities[idx].title)}&location=${encodeURIComponent(activities[idx].location || '')}&date=${encodeURIComponent(activities[idx].date || '')}&time=${encodeURIComponent(activities[idx].time || '')}&maxQuota=${activities[idx].maxQuota}&hours=${activities[idx].hours}&status=${encodeURIComponent(activities[idx].status || 'open')}`);
       return { success: true, activity: activities[idx] };
     }
     return { success: false };

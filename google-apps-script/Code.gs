@@ -177,8 +177,12 @@ function doPost(e) {
       const result = unapproveHoursRecord(postData.regId);
       performGoogleDriveBackup();
       responseData = { status: 'success', result: result };
-    } else if (action === 'createActivity' || action === 'saveActivity' || action === 'updateActivity') {
-      const result = saveActivity(postData.data);
+    } else if (action === 'createActivity') {
+      const result = createActivityRecord(postData.data);
+      performGoogleDriveBackup();
+      responseData = { status: 'success', result: result };
+    } else if (action === 'updateActivity' || action === 'saveActivity') {
+      const result = saveActivityRecord(postData.data);
       performGoogleDriveBackup();
       responseData = { status: 'success', result: result };
     } else if (action === 'createStaffUser' || action === 'updateStaffUser' || action === 'saveStaffUser') {
@@ -624,49 +628,127 @@ function unapproveHoursRecord(regId) {
   return false;
 }
 
-function saveActivity(data) {
+/**
+ * Deduplicate any existing duplicate activity IDs in Google Sheet (Self-healing database mechanism)
+ */
+function fixDuplicateActivityIdsInSheet() {
+  const sheet = getOrCreateSheet(CONFIG.SHEET_ACTIVITIES, ['ID', 'Title', 'Category', 'Description', 'Date', 'Time', 'Location', 'MaxQuota', 'RegisteredCount', 'Hours', 'Status', 'Banner']);
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return;
+
+  const seenIds = new Set();
+  let maxNum = 0;
+
+  for (let i = 1; i < rows.length; i++) {
+    const idStr = String(rows[i][0] || '').trim();
+    const match = idStr.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+  }
+
+  const year = new Date().getFullYear();
+  let counter = maxNum + 1;
+
+  for (let i = 1; i < rows.length; i++) {
+    const rawId = String(rows[i][0] || '').trim();
+    if (!rawId || seenIds.has(rawId)) {
+      let freshId = '';
+      do {
+        freshId = 'ACT-' + year + '-' + String(counter).padStart(3, '0');
+        counter++;
+      } while (seenIds.has(freshId));
+
+      sheet.getRange(i + 1, 1).setValue(freshId);
+      seenIds.add(freshId);
+    } else {
+      seenIds.add(rawId);
+    }
+  }
+}
+
+function createActivityRecord(data) {
+  if (!data) data = {};
+  fixDuplicateActivityIdsInSheet();
+
   const sheet = getOrCreateSheet(CONFIG.SHEET_ACTIVITIES, ['ID', 'Title', 'Category', 'Description', 'Date', 'Time', 'Location', 'MaxQuota', 'RegisteredCount', 'Hours', 'Status', 'Banner']);
   const rows = sheet.getDataRange().getValues();
 
-  if (!data.id || String(data.id).trim() === '') {
-    let maxNum = 0;
-    const year = new Date().getFullYear();
-    const existingIds = [];
-    for (let i = 1; i < rows.length; i++) {
-      const existingId = String(rows[i][0]);
-      existingIds.push(existingId);
-      const match = existingId.match(/(\d+)$/);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxNum) maxNum = num;
-      }
+  const existingIds = new Set();
+  let maxNum = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const existingId = String(rows[i][0] || '').trim();
+    if (existingId) existingIds.add(existingId);
+    const match = existingId.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
     }
-    let counter = maxNum + 1;
-    let candidateId = '';
-    do {
-      candidateId = 'ACT-' + year + '-' + String(counter).padStart(3, '0');
-      counter++;
-    } while (existingIds.indexOf(candidateId) !== -1);
-    data.id = candidateId;
   }
 
+  const year = new Date().getFullYear();
+  let finalId = data.id ? String(data.id).trim() : '';
+
+  // GUARANTEE uniqueness: if missing or already exists in sheet, generate fresh ID
+  if (!finalId || existingIds.has(finalId)) {
+    let counter = maxNum + 1;
+    do {
+      finalId = 'ACT-' + year + '-' + String(counter).padStart(3, '0');
+      counter++;
+    } while (existingIds.has(finalId));
+    data.id = finalId;
+  }
+
+  sheet.appendRow([
+    data.id,
+    data.title || '',
+    data.category || 'กิจกรรม',
+    data.description || '',
+    data.date || '',
+    data.time || '',
+    data.location || '',
+    Number(data.maxQuota || 0),
+    0,
+    Number(data.hours || 3),
+    data.status || 'open',
+    data.banner || ''
+  ]);
+  return { success: true, id: data.id };
+}
+
+function saveActivityRecord(data) {
+  if (!data) return false;
+  if (!data.id || String(data.id).trim() === '') {
+    return createActivityRecord(data);
+  }
+
+  fixDuplicateActivityIdsInSheet();
+
+  const sheet = getOrCreateSheet(CONFIG.SHEET_ACTIVITIES, ['ID', 'Title', 'Category', 'Description', 'Date', 'Time', 'Location', 'MaxQuota', 'RegisteredCount', 'Hours', 'Status', 'Banner']);
+  const rows = sheet.getDataRange().getValues();
+
   for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(data.id)) {
-      sheet.getRange(i + 1, 2).setValue(data.title);
-      sheet.getRange(i + 1, 3).setValue(data.category || 'กิจกรรม');
-      sheet.getRange(i + 1, 4).setValue(data.description);
-      sheet.getRange(i + 1, 5).setValue(data.date);
-      sheet.getRange(i + 1, 6).setValue(data.time);
-      sheet.getRange(i + 1, 7).setValue(data.location);
-      sheet.getRange(i + 1, 8).setValue(data.maxQuota);
-      sheet.getRange(i + 1, 10).setValue(data.hours || 3);
-      if (data.status) sheet.getRange(i + 1, 11).setValue(data.status);
-      if (data.banner) sheet.getRange(i + 1, 12).setValue(data.banner);
-      return true;
+    if (String(rows[i][0]).trim() === String(data.id).trim()) {
+      if (data.title !== undefined) sheet.getRange(i + 1, 2).setValue(data.title);
+      if (data.category !== undefined) sheet.getRange(i + 1, 3).setValue(data.category || 'กิจกรรม');
+      if (data.description !== undefined) sheet.getRange(i + 1, 4).setValue(data.description);
+      if (data.date !== undefined) sheet.getRange(i + 1, 5).setValue(data.date);
+      if (data.time !== undefined) sheet.getRange(i + 1, 6).setValue(data.time);
+      if (data.location !== undefined) sheet.getRange(i + 1, 7).setValue(data.location);
+      if (data.maxQuota !== undefined) sheet.getRange(i + 1, 8).setValue(Number(data.maxQuota));
+      if (data.hours !== undefined) sheet.getRange(i + 1, 10).setValue(Number(data.hours));
+      if (data.status !== undefined) sheet.getRange(i + 1, 11).setValue(data.status);
+      if (data.banner !== undefined) sheet.getRange(i + 1, 12).setValue(data.banner);
+      return { success: true, id: data.id };
     }
   }
-  sheet.appendRow([data.id, data.title, data.category || 'กิจกรรม', data.description, data.date, data.time, data.location, data.maxQuota, 0, data.hours || 3, data.status || 'open', data.banner]);
-  return true;
+
+  return createActivityRecord(data);
+}
+
+function saveActivity(data) {
+  return saveActivityRecord(data);
 }
 
 function saveStaffUser(data) {
