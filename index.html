@@ -1073,6 +1073,12 @@
             <pre
               style="max-height:220px; overflow-y:auto; background:#1e293b; color:#f8fafc; padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.75rem; line-height:1.4;"
                             id="gas-code-block"><code>function doPost(e) {
+  var lock = LockService.getScriptLock();
+  var hasLock = lock.tryLock(15000);
+  if (!hasLock) {
+    return ContentService.createTextOutput(JSON.stringify({status:"error", message: "Server busy, please try again"})).setMimeType(ContentService.MimeType.JSON);
+  }
+
   try {
     var raw = "";
     if (e && e.postData && e.postData.contents) {
@@ -1089,39 +1095,50 @@
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if (data.action === "syncAll") {
-      // 1. บันทึกข้อมูลรวมลงแผ่นสรุปหลัก
-      writeToSheet(ss, "Workers", data.workers);
-      writeToSheet(ss, "Activities", data.activities);
-      writeToSheet(ss, "Registrations", data.registrations);
-      writeToSheet(ss, "Categories", data.categories);
-      writeToSheet(ss, "Admins", data.admins);
+      // 1. บันทึกข้อมูลรวมลงแผ่นสรุปหลักอย่างปลอดภัย (เฉพาะเมื่อมีข้อมูล)
+      if (Array.isArray(data.workers) && data.workers.length > 0) writeToSheet(ss, "Workers", data.workers);
+      if (Array.isArray(data.activities) && data.activities.length > 0) writeToSheet(ss, "Activities", data.activities);
+      if (Array.isArray(data.registrations)) writeToSheet(ss, "Registrations", data.registrations);
+      if (Array.isArray(data.categories) && data.categories.length > 0) writeToSheet(ss, "Categories", data.categories);
+      if (Array.isArray(data.admins) && data.admins.length > 0) writeToSheet(ss, "Admins", data.admins);
 
       // 2. แยกบันทึกรายชื่อผู้ลงทะเบียนแยกรายกิจกรรมเป็นแท็บเฉพาะ (Act_ID_Title)
-      syncIndividualActivitySheets(ss, data.activities, data.registrations);
+      if (Array.isArray(data.activities) && data.activities.length > 0) {
+        syncIndividualActivitySheets(ss, data.activities, data.registrations);
+      }
     }
     return ContentService.createTextOutput(JSON.stringify({status:"success"})).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
     return ContentService.createTextOutput(JSON.stringify({status:"error", message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
   }
 }
 
 function doGet(e) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // อ่านรายชื่อผู้ลงทะเบียนจากแท็บแยกรายกิจกรรม (ถ้ามี) เพื่อรักษาลำดับแถวตามชีท
-  var registrations = readRegistrationsFromActivitySheets(ss);
-  if (!registrations || registrations.length === 0) {
-    registrations = readFromSheet(ss, "Registrations");
-  }
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(err) {}
 
-  var result = {
-    workers: readFromSheet(ss, "Workers"),
-    activities: readFromSheet(ss, "Activities"),
-    registrations: registrations,
-    categories: readFromSheet(ss, "Categories"),
-    admins: readFromSheet(ss, "Admins")
-  };
-  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // อ่านรายชื่อผู้ลงทะเบียนจากแท็บแยกรายกิจกรรม (ถ้ามี) เพื่อรักษาลำดับแถวตามชีท
+    var registrations = readRegistrationsFromActivitySheets(ss);
+    if (!registrations || registrations.length === 0) {
+      registrations = readFromSheet(ss, "Registrations");
+    }
+
+    var result = {
+      workers: readFromSheet(ss, "Workers"),
+      activities: readFromSheet(ss, "Activities"),
+      registrations: registrations,
+      categories: readFromSheet(ss, "Categories"),
+      admins: readFromSheet(ss, "Admins")
+    };
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
 }
 
 function syncIndividualActivitySheets(ss, activities, registrations) {
@@ -1174,9 +1191,9 @@ function readRegistrationsFromActivitySheets(ss) {
 }
 
 function writeToSheet(ss, sheetName, items) {
+  if (!items || !Array.isArray(items) || items.length === 0) return;
   var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
   sheet.clearContents();
-  if (!items || !Array.isArray(items) || items.length === 0) return;
   
   if (typeof items[0] !== "object" || items[0] === null) {
     sheet.getRange(1, 1, 1, 1).setValues([["Category"]]);

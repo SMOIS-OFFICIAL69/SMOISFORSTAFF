@@ -115,18 +115,25 @@ class Store {
   }
 
   init() {
-    const currentWorkers = JSON.parse(localStorage.getItem(STORAGE_KEYS.WORKERS) || '[]');
-    if (!localStorage.getItem(STORAGE_KEYS.WORKERS) || currentWorkers.length === 0) {
+    const hasWorkersKey = localStorage.getItem(STORAGE_KEYS.WORKERS);
+    const hasActivitiesKey = localStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+    const sheetUrl = localStorage.getItem(STORAGE_KEYS.GOOGLE_SHEET_URL) || DEFAULT_GOOGLE_SHEET_URL;
+
+    // Only populate seed defaults if Google Sheet URL is NOT set and local storage is missing
+    if (!hasWorkersKey && !sheetUrl) {
       localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(DEFAULT_WORKERS));
+    } else if (!hasWorkersKey) {
+      localStorage.setItem(STORAGE_KEYS.WORKERS, '[]');
     }
 
-    const currentActivities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITIES) || '[]');
-    if (!localStorage.getItem(STORAGE_KEYS.ACTIVITIES) || currentActivities.length === 0) {
+    if (!hasActivitiesKey && !sheetUrl) {
       localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(DEFAULT_ACTIVITIES));
+    } else if (!hasActivitiesKey) {
+      localStorage.setItem(STORAGE_KEYS.ACTIVITIES, '[]');
     }
 
     if (!localStorage.getItem(STORAGE_KEYS.REGISTRATIONS)) {
-      localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(DEFAULT_REGISTRATIONS));
+      localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, '[]');
     }
     if (!localStorage.getItem(STORAGE_KEYS.CATEGORIES)) {
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES));
@@ -395,12 +402,8 @@ class Store {
         const newFingerprint = this.getDataFingerprint();
         const dataChanged = prevFingerprint !== newFingerprint;
 
-        // If remote Google Sheet was completely empty, seed it with default local data
-        if (!hasRemoteData && (!data.workers || data.workers.length === 0) && (!data.activities || data.activities.length === 0)) {
-          this.autoSyncToSheets();
-        } else {
-          this.notifyDataChanged({ source: 'cloud', updated: dataChanged });
-        }
+        // Never auto-seed default data to Google Sheets on empty fetch to prevent overwriting cloud data
+        this.notifyDataChanged({ source: 'cloud', updated: dataChanged });
 
         return { success: true, updated: dataChanged };
       }
